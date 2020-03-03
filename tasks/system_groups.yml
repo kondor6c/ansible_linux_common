@@ -1,0 +1,23 @@
+- name: 'add groups'
+  group:
+    name: "{{ g.name }}"
+    state: "{{ g.status }}"
+    gid: "{{ g.gid }}"
+  loop: "{{ groups }}"
+  loop_control:
+    loop_var: g
+  tags:
+    - groupadd
+- template:
+    path: "/etc/sudoers/{{ g.sudo.data }}"
+    state: present
+    mode: '0400'
+    owner: 'root'
+    group: 'root'
+    validate: '/usr/sbin/visudo -cf %s'
+  loop: "{{ groups }}"
+  loop_control:
+    loop_var: g
+  tags:
+    - groupadd
+    - sudo

@@ -1,0 +1,236 @@
+---
+- name: 'import certificates from variable'
+  copy:
+    content: "{{ item.value }}"
+    dest: "/etc/pki/ca-trust/source/anchors/{{ item.key }}"
+    mode: 0664
+    owner: root
+    group: root
+    setype: cert_t
+    validate: "openssl x509 -in %s"
+  loop: "{{ trusted_ca_map | dict2items }}"
+  when: trusted_ca_map is defined
+- name: 'transfer certificates to trust directory'
+  copy:
+    src: "{{ item }}"
+    dest: "/etc/pki/ca-trust/source/anchors/{{ item }}"
+    mode: 0664
+    owner: root
+    group: root
+    setype: cert_t
+    validate: "openssl x509 -in %s"
+  loop: "{{ trusted_ca_file_list }}"
+  # reconsider this, whereas I like shipping certificates as static items, maybe they do not belong in a role, and indeed should be a variable that is presented as an argument/param more or less
+  when: trusted_ca_file_list is defined 
+
+- name: 'trust certs'
+  command: update-ca-trust force-enable
+- name: 'GPG file actions'
+  block:
+  - name: 'transfer GPG keys to directory'
+    copy:
+      src: "{{ item }}"
+      dest: "/etc/pki/rpm-gpg/{{ item }}"
+      mode: 0444
+      owner: root
+      group: root
+      setype: cert_t
+    loop: "{{ rpm_gpg_keys }}"
+  - name: 'trust RPM GPG key, preview-interface'
+    rpm_key:
+      state: present
+      key: "/etc/pki/rpm-gpg/{{ item }}"
+    loop: "{{ rpm_gpg_keys }}"
+- name: 'move certificates to trust directory'
+  copy:
+    src: "{{ item }}"
+    dest: "/etc/pki/rpm-gpg/{{ item }}"
+    mode: 0444
+    owner: root
+    group: root
+    setype: cert_t
+  loop: "{{ rpm_gpg_keys }}"
+- name: 'delete default repository files'
+  find:
+    paths: /etc/yum.repos.d/
+    patterns: '*repo'
+  register: existing_repository_files
+- name: 'delete old repository files'
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  run_once: true
+  loop: "{{  existing_repository_files.files }}"
+- name: 'check for /etc/dnf, sometimes fedora, sometimes centos or rhel'
+  stat:
+    path: /etc/dnf
+  register: dnf_dir
+- name: 'custom dnf config, yum proxy'
+  template:
+    dest: "/etc/dnf/dnf.conf"
+    src: dnf.conf.j2
+    mode: "0644"
+    owner: "root"
+    group: "root"
+  when: dnf_dir.stat.isfile is defined
+- name: 'install custom repositories'
+  template:
+    dest: "/etc/yum.repos.d/{{ item.title }}.repo"
+    src: repo.ini.j2
+    mode: "0644"
+    owner: "root"
+    group: "root"
+    setype: system_conf_t
+  loop: "{{ yum_repos |flatten(levels=1) }}"
+- name: 'CENT: install packages that might fail, due to different names'
+  yum:
+    name: "{{ centos_packages.install }}"
+    state: present
+- name: 'CENT: remove packages that a default installs and we totally do not need'
+  yum: 
+    name: "{{ centos_packages.absent }}"
+    state: absent
+- name: 'CENT: upgrade all packages'
+  yum:
+    name: '*'
+    state: latest
+- name: 'core sudoers file'
+  template:
+    src: sudoers.j2
+    dest: /etc/sudoers
+    owner: root
+    group: root
+    mode: '0600'
+    validate: '/usr/sbin/visudo -cf %s'
+    backup: yes
+- name: 'chrony, NTP time config'
+  template:
+    src: chrony.conf.j2
+    dest: /etc/chrony.conf
+    owner: root
+    group: root
+    mode: '0600'
+- name: static hosts entries
+  block:
+    
+  - name: 'hosts, for localnet domain'
+    template:
+      src: etc_hosts.j2
+      dest: /etc/hosts
+      owner: root
+      group: root
+      mode: '0644'
+
+  - name: 'ethers, reduces arp traffic'
+    template:
+      src: ethers.j2
+      dest: /etc/ethers
+      owner: root
+      group: root
+      mode: '0644'
+    when: net_hosts[0].interfaces[0].hwaddr is defined
+  
+  - name: 'ethers service, seed arp tables from file'
+    systemd:
+      name: arp-ethers.service
+      enabled: yes
+      no_block: yes
+      state: started
+    when: net_hosts[0].interfaces[0].hwaddr is defined
+  when: net_hosts is defined
+- name: skel create .ssh, for new accounts
+  file:
+    owner: root
+    group: root
+    path: /etc/skel/.ssh/config.d
+    mode: 0700
+    state: directory
+- name: skel create .ssh, for new accounts
+  file:
+    owner: root
+    group: root
+    path: /etc/skel/.ssh
+    mode: 0700
+    state: directory
+- name: skel create authorized keys file, for new accounts
+  file:
+    owner: root
+    group: root
+    path: /etc/skel/.ssh/authorized_keys
+    mode: 0600
+    state: touch
+- name: skel create .vimrc, for new accounts
+  copy:
+    owner: root
+    group: root
+    mode: 0644
+    dest: /etc/skel/.vimrc
+    content: |
+      set ruler
+      set number
+      set nocompatible
+      syntax enable
+      colorscheme desert
+- name: change default history
+  lineinfile:
+    path: /etc/profile
+    regexp: '^HISTSIZE='
+    line: HISTSIZE=9000
+    owner: root
+    group: root
+    mode: '0644'
+- name: 'public ssh CA key'
+  copy:
+    src: "{{ sshd_ca_pub }}"
+    dest: "/etc/ssh/sshd_ca.pub"
+    mode: 0400
+    owner: root
+    group: root
+    setype: sshd_key_t
+  when: sshd_certificates is defined
+- name: 'sshd config'
+  template:
+    src: sshd.conf.j2
+    dest: /etc/ssh/sshd.conf
+    owner: root
+    group: root
+    mode: '0600'
+    setype: etc_t
+    #https://github.com/ansible/ansible/issues/19243
+    #validate: "/usr/sbin/sshd -c -T %s"
+- name: activate sshd
+  systemd:
+    name: sshd
+    enabled: yes
+    state: started
+- name: 'rsyslog main configuration file'
+  template:
+    src: rsyslog.conf.j2
+    dest: /etc/rsyslog.conf
+    owner: root
+    group: root
+    mode: '0644'
+    setype: syslog_conf_t
+    validate: "rsyslogd -N1 -f %s"
+- name: activate rsyslog
+  systemd:
+    name: rsyslog
+    enabled: yes
+    state: started
+#- name: 'set selinux context on container dir' 
+  #/var/log/audit(/.*)?                      system_u:object_r:svirt_sandbox_file_t
+- name: 'let sysadm_r (devops) login with ssh'
+  seboolean:
+    name: ssh_sysadm_login
+    state: yes
+    persistent: yes
+
+- name: relabel
+  command: restorecon -Rv /
+
+
+  #- name: Debug result
+  # debug:
+  #  var: "{{item.files}}"
+
+# TODO disable firewalld, GPG keys, extra credit SSH CA, users

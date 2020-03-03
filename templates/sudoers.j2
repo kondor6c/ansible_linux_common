@@ -1,0 +1,37 @@
+## Sudoers initial template from fedora by Kevin Faulkner
+
+# compress_io is on by default, replay logs will be zlib
+# Aliases
+## User Aliases
+# User_Alias ADMINS = jsmith, mikem
+# Cmnd_Alias NETWORKING = /sbin/route, /sbin/ifconfig, /bin/ping, /sbin/dhclient, /usr/bin/net, /sbin/iptables, /usr/bin/rfcomm, /usr/bin/wvdial, /sbin/iwconfig, /sbin/mii-tool
+# Cmnd_Alias SOFTWARE = /bin/rpm, /usr/bin/up2date, /usr/bin/yum
+Cmnd_Alias SERVICES = /sbin/service, /sbin/systemctl, /sbin/journalctl
+Cmnd_Alias CONTAINER = /usr/sbin/docker
+# Cmnd_Alias STORAGE = /sbin/fdisk, /sbin/sfdisk, /sbin/parted, /sbin/partprobe, /bin/mount, /bin/umount
+# Cmnd_Alias DELEGATING = /usr/sbin/visudo, /bin/chown, /bin/chmod, /bin/chgrp 
+Cmnd_Alias PROCESSES = /bin/nice, /bin/kill, /usr/bin/kill, /usr/bin/killall
+# Cmnd_Alias DRIVERS = /sbin/modprobe
+Defaults   !visiblepw
+
+Defaults    env_reset
+Defaults    env_keep =  "COLORS DISPLAY HOSTNAME HISTSIZE KDEDIR LS_COLORS"
+Defaults    env_keep += "MAIL PS1 PS2 QTDIR USERNAME LANG LC_ADDRESS LC_CTYPE"
+Defaults    env_keep += "LC_COLLATE LC_IDENTIFICATION LC_MEASUREMENT LC_MESSAGES"
+Defaults    env_keep += "LC_MONETARY LC_NAME LC_NUMERIC LC_PAPER LC_TELEPHONE"
+Defaults    env_keep += "LC_TIME LC_ALL LANGUAGE LINGUAS _XKB_CHARSET XAUTHORITY"
+Defaults	env_keep += "fn_ews-reload=()*"
+
+Defaults    secure_path = /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/libexec
+
+root	ALL=(ALL) 	ALL
+%wheel		ALL=(ALL)	NOPASSWD: ALL
+
+
+%sudo		ALL=(ALL)	ALL
+%adm		ALL=SERVICES, SOFTWARE, PROCESSES
+%users		ALL=CONTAINER
+
+## Read drop-in files from /etc/sudoers.d (the # here does not mean a comment)
+## think of this as `(hash)include <stdio.h>` like in the C programming language
+#includedir /etc/sudoers.d

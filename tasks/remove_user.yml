@@ -1,0 +1,12 @@
+---
+- name: new kill
+  command: "pkill --signal 9 -U {{ item }}"
+  ignore_errors: true
+#- name: archive user contents
+#  command: "tar czf userhome_{{ item }}_archive.tar.gz /home/{{ item }}"
+#  when: "{{ users[item].archive_home|bool}}"
+#  loop: "{{ revoked_users }}"
+- name: remove user
+  user:
+    name: "{{ item }}"
+    state: absent

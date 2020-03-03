@@ -1,0 +1,51 @@
+---
+# tasks file for users
+- name: 'modify group membership'
+  group:
+    name: "{{ g.name }}"
+    state: present
+    gid: "{{ g.gid }}"
+  loop: "{{ user_groups }}"
+  loop_control:
+    loop_var: g
+  tags:
+    - groupadd
+- name: add the user
+  block:
+  - name: 'add users'
+    user:
+      name: "{{ user.name }}"
+      uid: "{{ user.uid }}"
+      comment: "{{ user.comment }}"
+      state: present
+      seuser: "{{ user.selinux }}"
+      groups: "{{ user.primary_group }}"
+    loop: user_directory
+    loop_control:
+      loop_var: user
+    tags:
+      - useradd
+  - name: 'auth_key module '
+    authorized_key:
+      user: "{{ item.name }}"
+      key: "{{ each_key }}"
+    loop: "{{ item.public_keys }}"
+    loop_control:
+      loop_var: each_key
+    tags:
+      - useradd
+      - authorized_keys
+      - core-preview
+- template:
+    dest: "/etc/sudoers.d/{{ group.name }}"
+    src: sudo_group.j2
+    mode: '0400'
+    owner: 'root'
+    group: 'root'
+    validate: '/usr/sbin/visudo -cf %s'
+  loop: "{{ user_groups }}"
+  loop_control:
+    loop_var: group
+  tags:
+    - sudo
+    - groupadd

@@ -1,0 +1,71 @@
+---
+- name: install freshclam
+  yum:
+    name: clamav-update
+    state: installed
+  tags:
+    - build_image
+- name: 'add systemd slice for clam to not consume too much resources and affect applications'
+  template:
+    dest: "/etc/systemd/system/clam.slice"
+    src: clam.slice.j2
+    mode: "0644"
+    owner: "root"
+    group: "root"
+  tags:
+    - build_image
+- name: 'add systemd slice for clam to not consume too much resources and affect applications'
+  template:
+    dest: "/etc/systemd/system/clamscan.service"
+    src: clamscan.service.j2
+    mode: "0644"
+    owner: "root"
+    group: "root"
+  tags:
+    - build_image
+    - systemd
+- name: 'freshclam updater'
+  template:
+    dest: "/etc/systemd/system/freshclam.service"
+    src: freshclam.service.j2
+    mode: "0644"
+    owner: "root"
+    group: "root"
+  tags:
+    - build_image
+    - systemd
+- name: 'clam config'
+  template:
+    dest: "/etc/clamd.d/scan.conf"
+    src: clam.d_scan.conf.j2
+    mode: "0644"
+    owner: "root"
+    group: "root"
+  tags:
+    - build_image
+- name: 'freshclam update timer (replaces cron!)'
+  template:
+    dest: "/etc/systemd/system/freshclam.timer"
+    src: freshclam.timer.j2
+    mode: "0644"
+    owner: "root"
+    group: "root"
+  tags:
+    - build_image
+    - systemd
+- name: 'clam timer (replaces cron!)'
+  template:
+    dest: "/etc/systemd/system/clamscan.timer"
+    src: clamscan.timer.j2
+    mode: "0644"
+    owner: "root"
+    group: "root"
+  tags:
+    - build_image
+    - systemd
+- name: 'freshclam (clamav defination downloader) config'
+  template:
+    dest: "/etc/clamd.d/freshclam.conf"
+    src: freshclam.conf.j2
+    mode: "0644"
+    owner: "root"

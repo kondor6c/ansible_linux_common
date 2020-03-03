@@ -1,0 +1,15 @@
+[{{ item.title }}]
+name={{ item.long_name }}
+baseurl={% for mirror in item.mirrors %}{{ mirror.protocol }}{{ mirror.host }}{{ mirror.path }}
+
+{% endfor %}
+gpgkey=file:///etc/pki/rpm-gpg/{{ item.gpg_key }}
+{% for key, value in item.options.items() %}
+{% if value != None %}
+{{ key }}={{ value }}
+{% endif %}
+{% if element.additional_options is defined %}{% for opt in element.additional_options.items() %}
+{{ opt }}
+{% endfor %}{% endif %}
+{% endfor %}
+skip_if_unavailable=False

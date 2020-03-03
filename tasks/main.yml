@@ -1,0 +1,7 @@
+---
+# tasks file for common Linux machines
+- name: primary
+  include_tasks: base.yml
+- name: clamAV configure
+  include_tasks: clamav.yml
+  when: clamav in centos_packages.install

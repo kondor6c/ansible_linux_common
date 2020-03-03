@@ -1,0 +1,150 @@
+# Include all config files in /etc/rsyslog.d/ same order as bash
+# quick facility guide:
+# 0 kern, 1 user, 2 mail, 3 daemon, 5 syslog, 6 lpr, 7 news
+# 8 uucp, 9 clock, 10 auth, 11 ftp, 12 ntp, 15 cron
+# include() object new in 8.33 (not centos 7)
+#include(file="/etc/rsyslog.d/*.conf" mode="optional")
+global (
+  workDirectory="/var/lib/rsyslog"
+  maxMessageSize="64k"
+)
+#### MODULES ####
+#module(load="imjournal" StateFile="imjournal.state")
+module(load="imuxsock" SysSock.Use="off")
+module(load="imklog") 
+{% if logging.elastic_forwarder is defined %}
+module(load="mmjsonparse")
+template(name="rsyslog-omelastic" type="string" string="omelastic-%$YEAR%.%$MONTH%.%$DAY%")
+action(type="omelasticsearch"
+  server="{{ rsyslog.elastic_forwarder.host }}"
+  serverport="{{ logging.elastic_forwarder.port }}"
+  template="json-syslog"  # use the template defined earlier
+  searchIndex="{{ rsyslog.elastic_forwarder.index }}"
+  dynSearchIndex="on"
+  searchType="events"
+  bulkmode="on"                   # use the Bulk API
+  queue.dequeuebatchsize="5000"   # ES bulk size
+  queue.type="LinkedList"         # async
+  queue.size="100000"             # capacity of the action queue
+  queue.workerthreads="5"         # 5 workers for the action
+  action.resumeretrycount="-1"    # retry indefinitely if ES is unreachable
+  errorfile="/var/log/omelasticsearch.log"
+)
+{% endif %}
+{% if logging.listen_and_forward is defined %}
+module(load="omrelp")
+module(load="imtcp")
+input(type="imtcp" port="514")
+action(type="omrelp" 
+  target="192.168.233.153"
+  port="20514"
+  tls="on"
+  tls.caCert="{{ logging.listen_and_forward.ca}}"
+  tls.myCert="{{ logging.listen_and_forward.cert }}"
+  tls.myPrivKey="{{ logging.listen_and_forward.key }}"
+  tls.authmode="name"
+  tls.permittedpeer=["{{ logging.remote.client_CN }}"] )
+{% endif %}
+{% if logging.forward is defined %}
+module(load="imuxsock")
+module(load="imrelp" ruleset="relp")
+input(type="imrelp" port="20514"
+  tls="on" 
+  tls.caCert="{{ logging.forward.ca}}"
+  tls.myCert="{{ logging.forward.cert }}"
+  tls.myPrivKey="{{ logging.forward.key }}"
+  tls.authMode="name" 
+  tls.permittedpeer=[{% for each in logging.listen_and_forward.CN_list %}"{{ each }}",{% endfor %} ] ) 
+{% endif %}
+kern.*   /dev/console
+
+auth,authpriv.* action(
+  name="action_auth"
+  type="omfile"
+  File="/var/log/secure.log"
+  FileOwner="root"
+  FileGroup="adm"
+  asyncWriting="on"
+  ioBufferSize="16k"
+  queue.workerthreadminimummessages="100" #number of messages that trigger a new worker thread, increments
+  queue.workerThreads="2"
+  queue.DequeueBatchSize="2" #increase performance, dequeue multiple messages at once. higher number, more memory
+  Sync="off"
+)
+
+cron.* action(
+  name="action_cron"
+  type="omfile"
+  File="/var/log/cron.log"
+  FileOwner="root"
+  FileGroup="adm"
+)
+
+#daemon.* action(
+#        name="action_daemon"
+#        type="omfile"
+#        File="/var/log/daemon.log"
+#        FileOwner="root"
+#        FileCreateMode="0640"
+#        FileGroup="adm"
+#)
+kern.* action(
+  name="action_kern"
+  type="omfile"
+  File="/var/log/kern.log"
+  FileOwner="root"
+  FileGroup="adm"
+)
+mail.* action(
+  name="action_mail"
+  type="omfile"
+  File="/var/log/mail.log"
+  FileOwner="root"
+  FileGroup="adm"
+)
+*.info;mail.none;authpriv.none;cron.none action(
+  name="general"
+  type="omfile"
+  File="/var/log/messages"
+  FileOwner="root"
+  FileGroup="adm"
+  queue.workerthreads="2"
+)
+
+*.=debug;news,mail.none action(
+  name="action_debug"
+  type="omfile"
+  File="/var/log/debug.log"
+  FileOwner="root"
+  FileGroup="adm"
+)
+
+news.* action(
+  name="action_news"
+  type="omfile"
+  File="/var/log/news.log"
+  FileOwner="root"
+  FileGroup="adm"
+)
+
+user.* action(
+  name="action_user"
+  type="omfile"
+  File="/var/log/user.log"
+  FileOwner="root"
+  FileGroup="adm"
+)
+*.emerg action(
+  name="action_emerge"
+  type="omusrmsg"
+  Users="*"
+  action.execOnlyOnceEveryInterval="10"
+)
+
+module(load="imfile"  )
+input(type="imfile"
+  File="/var/log/audit/audit.log"
+  Tag="audit"
+
+  Facility="local6"
+)

@@ -1,0 +1,63 @@
+# this is meant to be ran locally (delegated), it will generate keys. These should be added to a secret storage, some of them should not be ran frequently
+- copy:
+    mode: 0644
+    dest: "{{ user }}-gpg-key-answers"
+    content: |
+      %no-protection
+      %no-ask-passphrase
+      Key-Type: 1
+      Key-Type: RSA
+      Key-Length: 4096
+      Subkey-Type: RSA
+      Subkey-Type: 1
+      Subkey-Length: 2048
+      Subkey-Usage: SC
+      Subkey-Length: 2048
+      Subkey-Usage: A
+      Subkey-Length: 2048
+      Subkey-Usage: E
+      Revoker: {{ ca.gpg }}
+      Name-Real: {{ user.full_name }}
+      Name-Email: {{ user.email }}
+      Name-Comment: {{ user.comment }}
+      Expire-Date: {{ user.expire }}
+- name: 'output for generated keys and more'
+  file:
+    owner: "{{ user.name }}"
+    group: "{{ user.name }}"
+    path: "{{ user.name }}"
+    mode: 0700
+    state: directory
+
+- name: 'generate user gpg key'
+  command: "gpg2 --batch --full-gen-key {{ user.name }}-gpg-key-answers"
+- name: 'generate user gpg revoke key, we hold onto this. If user is compormised or leaves, we revoke the key'
+  command: "gpg2 --output {{ user.name}}-revoke.asc --gen-revoke "
+
+- name: 'generate user ssh key: TBS'
+  command: "ssh-keygen -t ed25519 -C generated-{{ user.name }}-{{ user.email }}-{{ user.comment }} -f user-{{ user.name }}-ed25519"
+  when: "{{ user.ssh.provided_pub }}"
+- block:
+  - name: 'generate the user ssh ca'
+    command: "ssh-keygen -t ed25519 -C SSH_user_CA-ed25519 -f user-ed25519-ca"
+  - name: 'read user ssh ca'
+    command: "cat user-ed25519-ca"
+    register: user_ca_private
+  - name: 'read user ssh ca'
+    command: "cat user-ed25519-ca.pub"
+    register: user_ca_public
+  when: user_ca_private is not defined
+
+- name: 'sign user key'
+  command: "ssh-keygen -s user_ed25519_ssh_ca -I superuser_id -n {{ user.name }} -z 1 -V +52w user-{{ user.name }}-ed25519.pub"
+- name: 'read signed key'
+  command: "cat user-{{ user.name }}-ed25519.pub"
+  register: user
+- name: "local actions, once per user or upon refresh/rotate keys"
+  block:
+  - name: 'get hex for 2fa'
+    shell: "openssl rand -hex 8 | base32"
+    register: 2fa_code
+  - name: 'create qrcode for user html'
+    shell: "qrencode -o - 'otpauth://totp/user@machine?{{ 2fa_code }}' | base64"
+    register: 2fa_qr

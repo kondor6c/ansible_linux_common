@@ -1,0 +1,51 @@
+# [SSH Server Daemon]
+HostbasedAuthentication no
+ClientAliveCountMax 0
+ClientAliveInterval 300
+ShowPatchLevel no
+RekeyLimit 512M 1h
+SyslogFacility AUTH
+LogLevel INFO
+Banner /etc/issue
+PidFile /var/run/sshd.pid
+{% if sshd_certificates is defined %}
+HostCertificate /etc/ssh/ssh_host_cert.pub
+TrustedUserCAKeys /etc/ssh/ca.pub
+{% if sshd_principles is defined %}
+AuthorizedPrincipalsFile /etc/ssh/auth_principals/%u
+{% endif %}
+{% else %}
+HostKey /etc/ssh/ssh_host_ed25519_key
+{% endif %}
+# Number of unauthenticated connections before we start dropping:Percentage chance of dropping once we reach:Maximum number of connections at which we start dropping everything
+MaxStartups 4:60:40
+# [Network]
+## [Ciphers]
+### Note: this should be defined at a system level cipher policy, having to track down every cipher is difficult
+MACs hmac-sha2-512,hmac-sha2-256,hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,umac-128-etm@openssh.com,umac-128@openssh.com
+Ciphers aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+KexAlgorithms diffie-hellman-group-exchange-sha256,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,curve25519-sha256,curve25519-sha256@libssh.org
+Port {{ sshd_port |default('22') }}
+# [Authentication]
+LoginGraceTime 30s
+PermitRootLogin no
+AllowGroups wheel admin
+StrictModes yes
+MaxSessions 2
+PubkeyAuthentication yes
+AuthorizedKeysFile      .ssh/authorized_keys
+PasswordAuthentication no # This allows us to not worry about a lot of security concerns and controls. WE DO NOT USE PASSWORDS
+## [Kerberos]
+KerberosAuthentication no
+GSSAPIAuthentication no
+GSSAPICleanupCredentials no
+GSSAPIKeyExchange no
+GSSAPIEnablek5users no
+# [User]
+UsePAM yes
+PermitUserEnvironment no
+{% if jump_bastion is defined %}
+X11Forwarding no
+{% endif %}
+AllowTcpForwarding yes
+AllowAgentForwarding yes

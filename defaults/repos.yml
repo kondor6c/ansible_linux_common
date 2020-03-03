@@ -1,0 +1,1942 @@
+  - title: base
+      long_name: CentOS-$releasever - Base
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/centos/$releasever/os/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+  - title: updates
+      long_name: CentOS-$releasever - Updates
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/centos/$releasever/updates/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+  - title: extras
+      long_name: CentOS-$releasever - Extras
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/centos/$releasever/extras/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+  - title: centosplus
+      long_name: CentOS-$releasever - Plus
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/centos/$releasever/centosplus/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+  - title: cr
+      long_name: CentOS-$releasever - cr
+      mirrors:
+        - protocol: http://
+          host: mirror.centos.org
+          path: /centos/$releasever/cr/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: base-debuginfo
+      long_name: CentOS-7 - Debuginfo
+      mirrors:
+        - protocol: http://
+          host: debuginfo.centos.org
+          path: /7/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-Debug-7
+      repo_enabled: 0
+  - title: fasttrack
+      long_name: CentOS-7 - fasttrack
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+  - title: c7-media
+      long_name: CentOS-$releasever - Media
+      mirrors:
+        - protocol: file://
+          host: media
+          path: 
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+  - title: base-source
+      long_name: CentOS-$releasever - Base Sources
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /centos/$releasever/os/Source
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+  - title: updates-source
+      long_name: CentOS-$releasever - Updates Sources
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /centos/$releasever/updates/Source
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+  - title: extras-source
+      long_name: CentOS-$releasever - Extras Sources
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /centos/$releasever/extras/Source
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+  - title: centosplus-source
+      long_name: CentOS-$releasever - Plus Sources
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /centos/$releasever/centosplus/Source
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+  - title: C7.0.1406-base
+      long_name: CentOS-7.0.1406 - Base
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.0.1406/os/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.0.1406-updates
+      long_name: CentOS-7.0.1406 - Updates
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.0.1406/updates/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.0.1406-extras
+      long_name: CentOS-7.0.1406 - Extras
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.0.1406/extras/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.0.1406-centosplus
+      long_name: CentOS-7.0.1406 - CentOSPlus
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.0.1406/centosplus/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.0.1406-fasttrack
+      long_name: CentOS-7.0.1406 - Fasttrack
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.0.1406/fasttrack/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.1.1503-base
+      long_name: CentOS-7.1.1503 - Base
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.1.1503/os/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.1.1503-updates
+      long_name: CentOS-7.1.1503 - Updates
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.1.1503/updates/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.1.1503-extras
+      long_name: CentOS-7.1.1503 - Extras
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.1.1503/extras/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.1.1503-centosplus
+      long_name: CentOS-7.1.1503 - CentOSPlus
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.1.1503/centosplus/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.1.1503-fasttrack
+      long_name: CentOS-7.1.1503 - Fasttrack
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.1.1503/fasttrack/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.2.1511-base
+      long_name: CentOS-7.2.1511 - Base
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.2.1511/os/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.2.1511-updates
+      long_name: CentOS-7.2.1511 - Updates
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.2.1511/updates/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.2.1511-extras
+      long_name: CentOS-7.2.1511 - Extras
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.2.1511/extras/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.2.1511-centosplus
+      long_name: CentOS-7.2.1511 - CentOSPlus
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.2.1511/centosplus/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.2.1511-fasttrack
+      long_name: CentOS-7.2.1511 - Fasttrack
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.2.1511/fasttrack/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.3.1611-base
+      long_name: CentOS-7.3.1611 - Base
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.3.1611/os/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.3.1611-updates
+      long_name: CentOS-7.3.1611 - Updates
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.3.1611/updates/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.3.1611-extras
+      long_name: CentOS-7.3.1611 - Extras
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.3.1611/extras/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.3.1611-centosplus
+      long_name: CentOS-7.3.1611 - CentOSPlus
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.3.1611/centosplus/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.3.1611-fasttrack
+      long_name: CentOS-7.3.1611 - Fasttrack
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.3.1611/fasttrack/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.4.1708-base
+      long_name: CentOS-7.4.1708 - Base
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.4.1708/os/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.4.1708-updates
+      long_name: CentOS-7.4.1708 - Updates
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.4.1708/updates/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.4.1708-extras
+      long_name: CentOS-7.4.1708 - Extras
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.4.1708/extras/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.4.1708-centosplus
+      long_name: CentOS-7.4.1708 - CentOSPlus
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.4.1708/centosplus/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.4.1708-fasttrack
+      long_name: CentOS-7.4.1708 - Fasttrack
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.4.1708/fasttrack/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.5.1804-base
+      long_name: CentOS-7.5.1804 - Base
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.5.1804/os/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.5.1804-updates
+      long_name: CentOS-7.5.1804 - Updates
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.5.1804/updates/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.5.1804-extras
+      long_name: CentOS-7.5.1804 - Extras
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.5.1804/extras/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.5.1804-centosplus
+      long_name: CentOS-7.5.1804 - CentOSPlus
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.5.1804/centosplus/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.5.1804-fasttrack
+      long_name: CentOS-7.5.1804 - Fasttrack
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.5.1804/fasttrack/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.6.1810-base
+      long_name: CentOS-7.6.1810 - Base
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.6.1810/os/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.6.1810-updates
+      long_name: CentOS-7.6.1810 - Updates
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.6.1810/updates/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.6.1810-extras
+      long_name: CentOS-7.6.1810 - Extras
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.6.1810/extras/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.6.1810-centosplus
+      long_name: CentOS-7.6.1810 - CentOSPlus
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.6.1810/centosplus/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: C7.6.1810-fasttrack
+      long_name: CentOS-7.6.1810 - Fasttrack
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: /7.6.1810/fasttrack/$basearch
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+      repo_enabled: 0
+  - title: epel
+      long_name: Extra Packages for Enterprise Linux 7 - $basearch
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/epel/7/$basearch
+      repo_enabled: 1
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+  - title: epel-debuginfo
+      long_name: Extra Packages for Enterprise Linux 7 - $basearch - Debug
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/epel/7/$basearch
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+  - title: epel-source
+      long_name: Extra Packages for Enterprise Linux 7 - $basearch - Source
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/epel/7
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+  - title: epel-testing
+      long_name: Extra Packages for Enterprise Linux 7 - Testing - $basearch
+      repo_enabled: 0
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+  - title: epel-testing-debuginfo
+      long_name: Extra Packages for Enterprise Linux 7 - Testing - $basearch - Debug
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+  - title: epel-testing-source
+      long_name: Extra Packages for Enterprise Linux 7 - Testing - $basearch - Source
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+  - title: AppStream
+      long_name: CentOS-$releasever - AppStream
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/centos/$releasever/AppStream/$basearch/os
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      repo_enabled: 1
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+  - title: BaseOS
+      long_name: CentOS-$releasever - Base
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/centos/$releasever/BaseOS/$basearch/os
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      repo_enabled: 1
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+  - title: centosplus
+      long_name: CentOS-$releasever - Plus
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/centos/$releasever/centosplus/$basearch/os
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+  - title: cr
+      long_name: CentOS-$releasever - cr
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/centos/$releasever/cr/$basearch/os
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+  - title: base-debuginfo
+      long_name: CentOS-$releasever - Debuginfo
+      mirrors:
+        - protocol: http://
+          host: debuginfo.centos.org
+          path: 
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+  - title: extras
+      long_name: CentOS-$releasever - Extras
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/centos/$releasever/extras/$basearch/os
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      repo_enabled: 1
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+  - title: fasttrack
+      long_name: CentOS-$releasever - fasttrack
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+  - title: c8-media-BaseOS
+      long_name: CentOS-BaseOS-$releasever - Media
+      mirrors:
+        - protocol: file://
+          host: media
+          path: 
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+  - title: c8-media-AppStream
+      long_name: CentOS-AppStream-$releasever - Media
+      mirrors:
+        - protocol: file://
+          host: media
+          path: 
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+  - title: PowerTools
+      long_name: CentOS-$releasever - PowerTools
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/centos/$releasever/PowerTools/$basearch/os
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+  - title: BaseOS-source
+      long_name: CentOS-$releasever - BaseOS Sources
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: 
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+  - title: AppStream-source
+      long_name: CentOS-$releasever - AppStream Sources
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: 
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+  - title: extras-source
+      long_name: CentOS-$releasever - Extras Sources
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: 
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+  - title: centosplus-source
+      long_name: CentOS-$releasever - Plus Sources
+      mirrors:
+        - protocol: http://
+          host: vault.centos.org
+          path: 
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+  - title: epel-playground
+      long_name: Extra Packages for Enterprise Linux $releasever - Playground - $basearch
+      repo_enabled: 0
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
+  - title: epel-playground-debuginfo
+      long_name: Extra Packages for Enterprise Linux $releasever - Playground - $basearch - Debug
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+  - title: epel-playground-source
+      long_name: Extra Packages for Enterprise Linux $releasever - Playground - $basearch - Source
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+  - title: epel
+      long_name: Extra Packages for Enterprise Linux $releasever - $basearch
+      repo_enabled: 1
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
+  - title: epel-debuginfo
+      long_name: Extra Packages for Enterprise Linux $releasever - $basearch - Debug
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+  - title: epel-source
+      long_name: Extra Packages for Enterprise Linux $releasever - $basearch - Source
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+  - title: epel-testing
+      long_name: Extra Packages for Enterprise Linux $releasever - Testing - $basearch
+      repo_enabled: 0
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
+  - title: epel-testing-debuginfo
+      long_name: Extra Packages for Enterprise Linux $releasever - Testing - $basearch - Debug
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+  - title: epel-testing-source
+      long_name: Extra Packages for Enterprise Linux $releasever - Testing - $basearch - Source
+      repo_enabled: 0
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+  - title: fedora-cisco-openh264
+      long_name: Fedora $releasever openh264 (From Cisco) - $basearch
+      mirrors:
+        - protocol: https://
+          host: codecs.fedoraproject.org
+          path: /openh264/$releasever/$basearch
+      type: rpm
+      repo_enabled: 0
+      repo_enabled: 1
+      metadata: 14d
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
+  - title: fedora-cisco-openh264-debuginfo
+      long_name: Fedora $releasever openh264 (From Cisco) - $basearch - Debug
+      mirrors:
+        - protocol: https://
+          host: codecs.fedoraproject.org
+          path: /openh264/$releasever/$basearch/debug
+      type: rpm
+      repo_enabled: 0
+      metadata: 28d
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
+  - title: fedora-modular
+      long_name: Fedora Modular $releasever - $basearch
+      mirrors:
+        - protocol: http://
+          host: download-ib01.fedoraproject.org
+          path: /pub/fedora/linux/updates/$releasever/Modular/$basearch
+      repo_enabled: 1
+      type: rpm
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
+  - title: fedora-modular-debuginfo
+      long_name: Fedora Modular $releasever - $basearch - Debug
+      mirrors:
+        - protocol: http://
+          host: download-ib01.fedoraproject.org
+          path: /pub/fedora/linux/updates/$releasever/Modular/$basearch/debug
+      repo_enabled: 0
+      metadata: 7d
+      type: rpm
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
+  - title: fedora-modular-source
+      long_name: Fedora Modular $releasever - Source
+      mirrors:
+        - protocol: http://
+          host: download-ib01.fedoraproject.org
+          path: /pub/fedora/linux/updates/$releasever/Modular/$basearch/source
+      repo_enabled: 0
+      metadata: 7d
+      type: rpm
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
+  - title: fedora
+      long_name: Fedora $releasever - $basearch
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/fedora/linux/updates/$releasever/Everything/$basearch
+      repo_enabled: 1
+      metadata: 7d
+      type: rpm
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
+  - title: fedora-debuginfo
+      long_name: Fedora $releasever - $basearch - Debug
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/fedora/linux/updates/$releasever/Everything/$basearch/debug
+      repo_enabled: 0
+      metadata: 7d
+      type: rpm
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
+  - title: fedora-source
+      long_name: Fedora $releasever - Source
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/fedora/linux/updates/$releasever/Everything/$basearch/source
+      repo_enabled: 0
+      metadata: 7d
+      type: rpm
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
+  - title: updates-modular
+      long_name: Fedora Modular $releasever - $basearch - Updates
+      mirrors:
+        - protocol: http://
+          host: download-ib01.fedoraproject.org
+          path: /pub/fedora/linux/updates/$releasever/Modular/$basearch
+      repo_enabled: 1
+      type: rpm
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      metadata: 6h
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
+  - title: updates-modular-debuginfo
+      long_name: Fedora Modular $releasever - $basearch - Updates - Debug
+      mirrors:
+        - protocol: http://
+          host: download-ib01.fedoraproject.org
+          path: /pub/fedora/linux/updates/$releasever/Modular/$basearch
+      repo_enabled: 0
+      type: rpm
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      metadata: 6h
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
+  - title: updates-modular-source
+      long_name: Fedora Modular $releasever - Updates Source
+      mirrors:
+        - protocol: http://
+          host: download-ib01.fedoraproject.org
+          path: /pub/fedora/linux/updates/$releasever/Modular/$basearch
+      repo_enabled: 0
+      type: rpm
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      metadata: 6h
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
+  - title: updates
+      long_name: Fedora $releasever - $basearch - Updates
+      mirrors:
+        - protocol: http://
+          host: download-ib01.fedoraproject.org
+          path: /pub/fedora/linux/updates/$releasever/Everything/$basearch
+      repo_enabled: 1
+      type: rpm
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      metadata: 6h
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
+  - title: updates-debuginfo
+      long_name: Fedora $releasever - $basearch - Updates - Debug
+      mirrors:
+        - protocol: http://
+          host: download-ib01.fedoraproject.org
+          path: /pub/fedora/linux/updates/$releasever/Everything/$basearch
+      repo_enabled: 0
+      type: rpm
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      metadata: 6h
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
+  - title: updates-source
+      long_name: Fedora $releasever - Updates Source
+      mirrors:
+        - protocol: http://
+          host: download-ib01.fedoraproject.org
+          path: /pub/fedora/linux/updates/$releasever/Everything/$basearch/SRPMS
+      repo_enabled: 0
+      type: rpm
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      metadata: 6h
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
+  - title: updates-testing-modular
+      long_name: Fedora Modular $releasever - $basearch - Test Updates
+      mirrors:
+        - protocol: http://
+          host: download-ib01.fedoraproject.org
+          path: /pub/fedora/linux/updates/testing/$releasever/Modular/$basearch
+      repo_enabled: 0
+      type: rpm
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      metadata: 6h
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
+  - title: updates-testing-modular-debuginfo
+      long_name: Fedora Modular $releasever - $basearch - Test Updates Debug
+      mirrors:
+        - protocol: http://
+          host: download-ib01.fedoraproject.org
+          path: /pub/fedora/linux/updates/testing/$releasever/Modular/$basearch/debug
+      repo_enabled: 0
+      type: rpm
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      metadata: 6h
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
+  - title: updates-testing-modular-source
+      long_name: Fedora Modular $releasever - Test Updates Source
+      mirrors:
+        - protocol: http://
+          host: download-ib01.fedoraproject.org
+          path: /pub/fedora/linux/updates/testing/$releasever/Modular/$basearch/SRPMS
+      repo_enabled: 0
+      type: rpm
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      metadata: 6h
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
+  - title: updates-testing
+      long_name: Fedora $releasever - $basearch - Test Updates
+      mirrors:
+        - protocol: http://
+          host: download-ib01.fedoraproject.org
+          path: /pub/fedora/linux/updates/testing/$releasever/Everything/$basearch
+      repo_enabled: 0
+      type: rpm
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      metadata: 6h
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
+  - title: updates-testing-debuginfo
+      long_name: Fedora $releasever - $basearch - Test Updates Debug
+      mirrors:
+        - protocol: http://
+          host: download-ib01.fedoraproject.org
+          path: /pub/fedora/linux/updates/testing/$releasever/Everything/$basearch/debug
+      repo_enabled: 0
+      type: rpm
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      metadata: 6h
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
+  - title: updates-testing-source
+      long_name: Fedora $releasever - Test Updates Source
+      mirrors:
+        - protocol: http://
+          host: download-ib01.fedoraproject.org
+          path: /pub/fedora/linux/updates/testing/$releasever/Everything/$basearch/SRPMS
+      repo_enabled: 0
+      type: rpm
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      metadata: 6h
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
+  - title: rpmfusion-free
+      long_name: RPM Fusion for Fedora $releasever - Free
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/rpmfusion/free/fedora/releases/$releasever/Everything/$basearch/os
+      repo_enabled: 1
+      metadata: 14d
+      type: rpm-md
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-$releasever
+  - title: rpmfusion-free-debuginfo
+      long_name: RPM Fusion for Fedora $releasever - Free - Debug
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/rpmfusion/free/fedora/releases/$releasever/Everything/$basearch/debug
+      repo_enabled: 0
+      metadata: 7d
+      type: rpm-md
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-$releasever
+  - title: rpmfusion-free-source
+      long_name: RPM Fusion for Fedora $releasever - Free - Source
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/rpmfusion/free/fedora/releases/$releasever/Everything/source/SRPMS
+      repo_enabled: 0
+      metadata: 7d
+      type: rpm-md
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-$releasever
+  - title: rpmfusion-free-tainted
+      long_name: RPM Fusion for Fedora $releasever - Free tainted
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/rpmfusion/free/fedora/tainted/$releasever/$basearch
+      repo_enabled: 1
+      metadata: 6h
+      type: rpm-md
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-$releasever
+  - title: rpmfusion-free-tainted-debuginfo
+      long_name: RPM Fusion for Fedora $releasever - Free tainted - Debug
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/rpmfusion/free/fedora/tainted/$releasever/Everything/$basearch/debug
+      repo_enabled: 0
+      metadata: 6h
+      type: rpm-md
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-$releasever
+  - title: rpmfusion-free-tainted-source
+      long_name: RPM Fusion for Fedora $releasever - Free tainted - Source
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/rpmfusion/free/fedora/tainted/$releasever/Everything/$basearch/SRPMS
+      repo_enabled: 0
+      metadata: 6h
+      type: rpm-md
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-$releasever
+  - title: rpmfusion-free-updates
+      long_name: RPM Fusion for Fedora $releasever - Free - Updates
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/rpmfusion/free/fedora/updates/$releasever/$basearch
+      repo_enabled: 1
+      repo_enabled: 1
+      type: rpm-md
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-$releasever
+  - title: rpmfusion-free-updates-debuginfo
+      long_name: RPM Fusion for Fedora $releasever - Free - Updates Debug
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/rpmfusion/free/fedora/updates/$releasever/$basearch/debug
+      repo_enabled: 0
+      type: rpm-md
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-$releasever
+  - title: rpmfusion-free-updates-source
+      long_name: RPM Fusion for Fedora $releasever - Free - Updates Source
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/rpmfusion/free/fedora/updates/$releasever/$basearch/source/SRPMS
+      repo_enabled: 0
+      type: rpm-md
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-$releasever
+  - title: rpmfusion-free-updates-testing
+      long_name: RPM Fusion for Fedora $releasever - Free - Test Updates
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/rpmfusion/free/fedora/updates/testing/$releasever/Everything/$basearch
+      repo_enabled: 0
+      repo_enabled: 0
+      type: rpm-md
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-$releasever
+  - title: rpmfusion-free-updates-testing-debuginfo
+      long_name: RPM Fusion for Fedora $releasever - Free - Test Updates Debug
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/rpmfusion/free/fedora/updates/testing/$releasever/$basearch/debug
+      repo_enabled: 0
+      type: rpm-md
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-$releasever
+  - title: rpmfusion-free-updates-testing-source
+      long_name: RPM Fusion for Fedora $releasever - Free - Test Updates Source
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/rpmfusion/free/fedora/updates/testing/$releasever/SRPMS
+      repo_enabled: 0
+      type: rpm-md
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-$releasever
+  - title: rpmfusion-nonfree
+      long_name: RPM Fusion for Fedora $releasever - Nonfree
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/rpmfusion/nonfree/fedora/releases/$releasever/Everything/$basearch/os
+      repo_enabled: 1
+      repo_enabled: 1
+      metadata: 14d
+      type: rpm-md
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-$releasever
+  - title: rpmfusion-nonfree-debuginfo
+      long_name: RPM Fusion for Fedora $releasever - Nonfree - Debug
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/rpmfusion/nonfree/fedora/releases/$releasever/Everything/$basearch/debug
+      repo_enabled: 0
+      metadata: 7d
+      type: rpm-md
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-$releasever
+  - title: rpmfusion-nonfree-source
+      long_name: RPM Fusion for Fedora $releasever - Nonfree - Source
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/rpmfusion/nonfree/fedora/releases/$releasever/source/SRPMS
+      repo_enabled: 0
+      metadata: 7d
+      type: rpm-md
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-$releasever
+  - title: rpmfusion-nonfree-tainted
+      long_name: RPM Fusion for Fedora $releasever - Nonfree tainted
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/rpmfusion/nonfree/fedora/tainted/$releasever/$basearch
+      repo_enabled: 1
+      metadata: 14d
+      type: rpm-md
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-$releasever
+  - title: rpmfusion-nonfree-tainted-debuginfo
+      long_name: RPM Fusion for Fedora $releasever - Nonfree tainted - Debug
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/rpmfusion/nonfree/fedora/tainted/$releasever/Everything/$basearch/debug
+      repo_enabled: 0
+      metadata: 7d
+      type: rpm-md
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-$releasever
+  - title: rpmfusion-nonfree-tainted-source
+      long_name: RPM Fusion for Fedora $releasever - Nonfree tainted - Source
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/rpmfusion/nonfree/fedora/tainted/$releasever/source/SRPMS
+      repo_enabled: 0
+      metadata: 7d
+      type: rpm-md
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-$releasever
+  - title: rpmfusion-nonfree-updates
+      long_name: RPM Fusion for Fedora $releasever - Nonfree - Updates
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/rpmfusion/nonfree/fedora/updates/$releasever/$basearch
+      repo_enabled: 1
+      repo_enabled: 1
+      type: rpm-md
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-$releasever
+  - title: rpmfusion-nonfree-updates-debuginfo
+      long_name: RPM Fusion for Fedora $releasever - Nonfree - Updates Debug
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/rpmfusion/nonfree/fedora/updates/$releasever/$basearch/debug
+      repo_enabled: 0
+      type: rpm-md
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-$releasever
+  - title: rpmfusion-nonfree-updates-source
+      long_name: RPM Fusion for Fedora $releasever - Nonfree - Updates Source
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/rpmfusion/nonfree/fedora/updates/$releasever/SRPMS
+      repo_enabled: 0
+      type: rpm-md
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-$releasever
+  - title: rpmfusion-nonfree-updates-testing
+      long_name: RPM Fusion for Fedora $releasever - Nonfree - Test Updates
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/rpmfusion/nonfree/fedora/updates/testing/$releasever/Everything/$basearch
+      repo_enabled: 0
+      repo_enabled: 0
+      type: rpm-md
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-$releasever
+  - title: rpmfusion-nonfree-updates-testing-debuginfo
+      long_name: RPM Fusion for Fedora $releasever - Nonfree - Test Updates Debug
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/rpmfusion/nonfree/fedora/updates/testing/$releasever/Everything/$basearch/debug
+      repo_enabled: 0
+      type: rpm-md
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-$releasever
+  - title: rpmfusion-nonfree-updates-testing-source
+      long_name: RPM Fusion for Fedora $releasever - Nonfree - Test Updates Source
+      mirrors:
+        - protocol: http://
+          host: mirror.math.princeton.edu
+          path: /pub/rpmfusion/nonfree/fedora/updates/testing/$releasever/source/SRPMS
+      repo_enabled: 0
+      type: rpm-md
+      package_gpg: 1
+      cache_enabled: False
+      bandwidth: False
+      fail_over_method: False
+      cost: False
+      retries: False
+      cache_dir: False
+      repo_gpg: False
+      gpg-key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-$releasever
