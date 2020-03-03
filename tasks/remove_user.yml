@@ -8,5 +8,8 @@
 #  loop: "{{ revoked_users }}"
 - name: remove user
   user:
-    name: "{{ item }}"
+    name: "{{ u }}"
     state: absent
+  loop: "{{ revoked_users }}"
+  loop_control:
+    loop_var: u

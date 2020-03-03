@@ -14,30 +14,31 @@
   block:
   - name: 'add users'
     user:
-      name: "{{ user.name }}"
-      uid: "{{ user.uid }}"
-      comment: "{{ user.comment }}"
+      name: "{{ u.name }}"
+      uid: "{{ u.uid }}"
+      comment: "{{ u.comment }}"
       state: present
-      seuser: "{{ user.selinux }}"
-      groups: "{{ user.primary_group }}"
-    loop: user_directory
+      seuser: "{{ u.selinux }}"
+      groups: "{{ u.primary_group }}"
+    loop: "{{ user_map }}"
     loop_control:
-      loop_var: user
+      loop_var: u
     tags:
       - useradd
   - name: 'auth_key module '
     authorized_key:
-      user: "{{ item.name }}"
-      key: "{{ each_key }}"
-    loop: "{{ item.public_keys }}"
+      user: "{{ u.name }}"
+      key: "{{ u.public_keys[0] }}"
+    when: "u.public_keys[0] | length >= 1"
+    loop: "{{ user_map }}"
     loop_control:
-      loop_var: each_key
+      loop_var: u
     tags:
       - useradd
       - authorized_keys
       - core-preview
 - template:
-    dest: "/etc/sudoers.d/{{ group.name }}"
+    dest: "/etc/sudoers.d/{{ g.name }}"
     src: sudo_group.j2
     mode: '0400'
     owner: 'root'
@@ -45,7 +46,7 @@
     validate: '/usr/sbin/visudo -cf %s'
   loop: "{{ user_groups }}"
   loop_control:
-    loop_var: group
+    loop_var: g
   tags:
     - sudo
     - groupadd
