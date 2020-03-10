@@ -7,7 +7,6 @@ centos_packages:
     - nss-tools
     - gnutls-utils
     - rsyslog-gnutls
-    - libsemanage-python
   absent:
     - cron
     - krb5-workstation
