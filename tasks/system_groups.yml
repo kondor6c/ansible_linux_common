@@ -9,8 +9,8 @@
   tags:
     - groupadd
 - template:
-    path: "/etc/sudoers/{{ g.sudo.data }}"
-    state: present
+    dest: "/etc/sudoers.d/{{ g.name }}"
+    src: sudoers-d.j2
     mode: '0400'
     owner: 'root'
     group: 'root'

@@ -100,6 +100,10 @@
     mode: '0600'
 - name: static hosts entries
   block:
+  - name: 'install net-tools provides arp seeding'
+    yum:
+      name: net-tools
+      state: latest
     
   - name: 'hosts, for localnet domain'
     template:
@@ -208,6 +212,23 @@
     name: rsyslog
     enabled: yes
     state: started
+- name: systemd-networkd allows for many more features and control than regular init style network scripts
+  template:
+    src: networkd-external.network
+    dest: /etc/systemd/network/
+    owner: root
+    group: root
+    mode: '0644'
+    setype: etc_t
+- name: systemd-networkd allows for many more features and control than regular init style network scripts
+  template:
+    src: networkd-internal.network
+    dest: /etc/systemd/network/
+    owner: root
+    group: root
+    mode: '0644'
+    setype: etc_t
+
 #- name: 'set selinux context on container dir' 
   #/var/log/audit(/.*)?                      system_u:object_r:svirt_sandbox_file_t
 - name: 'let sysadm_r (devops) login with ssh'
@@ -215,6 +236,8 @@
     name: ssh_sysadm_login
     state: yes
     persistent: yes
+- name: 'add devops version'
+  shell: echo '1.0.0' > /devops_version
 
 - name: relabel
   command: restorecon -Rv /

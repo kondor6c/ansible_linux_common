@@ -4,4 +4,6 @@
   include_tasks: base.yml
 - name: clamAV configure
   include_tasks: clamav.yml
+- name: basic automation group
+  include_tasks: system_groups.yml
   

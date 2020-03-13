@@ -33,6 +33,13 @@ performance:
     vm.dirty_background_bytes: 107374182
     net.ipv4.tcp_fastopen: 3
     net.ipv4.tcp_slow_start_after_idle: 0
+groups:
+  - name: automation
+    gid: 2222
+    status: present
+    sudo:
+      data: "ALL=(ALL)	NOPASSWD: ALL"
+
 user_message: |
             Right now the gpg key is unprotected, you can change that by changing the key's password by using `gpg2 --edit-key {{ user.gpg_id }} < passwd` then save
 trusted_ca_map:

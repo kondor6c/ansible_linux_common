@@ -1,0 +1,11 @@
+[Match]
+Name=eth0
+
+[Network]
+DHCP=yes
+IPForward=yes
+LLDP=false
+IPv6Token=::1
+
+[DHCPv4]
+UseMTU=true

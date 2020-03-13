@@ -26,9 +26,13 @@
     tags:
       - useradd
   - name: 'auth_key module '
-    authorized_key:
-      user: "{{ u.name }}"
-      key: "{{ u.public_keys[0] }}"
+    template:
+      dest: "/etc/sudoers.d/{{ g.name }}"
+      src: sudo_group.j2
+      mode: '0400'
+      owner: 'root'
+      group: 'root'
+      validate: '/usr/sbin/visudo -cf %s'
     when: "u.public_keys[0] | length >= 1"
     loop: "{{ user_map }}"
     loop_control:
@@ -37,7 +41,15 @@
       - useradd
       - authorized_keys
       - core-preview
-- template:
+- name: do not let users modify ssh keys, only automation
+  file:
+    path: "/home/{{ u.name }}/.ssh/authorized_keys"
+    attr: +i
+  loop: "{{ user_map }}"
+  loop_control:
+    loop_var: u
+- name: add group directly
+  template:
     dest: "/etc/sudoers.d/{{ g.name }}"
     src: sudo_group.j2
     mode: '0400'
@@ -50,3 +62,9 @@
   tags:
     - sudo
     - groupadd
+- name: read all ssh keys
+  shell: "cat /home/{{ u.name }}/.ssh/authorized_keys  /home/{{ u.name }}/.ssh/authorized_keys2"
+  register: installed_user_keys
+- name: "check for unknown keys (public keys that are not in the user map/dict)"
+  when: installed_user_keys.stdout | intersect(item.public_keys)
+  loop: users
