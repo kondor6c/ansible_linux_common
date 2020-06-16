@@ -36,8 +36,8 @@ module(load="omrelp")
 module(load="imtcp")
 input(type="imtcp" port="514")
 action(type="omrelp" 
-  target="192.168.233.153"
-  port="20514"
+  target="{{ remote_logging_server |default('10.1.1.1')}}"
+  port="{{ remote_logging_port | default('20514') }}"
   tls="on"
   tls.caCert="{{ logging.listen_and_forward.ca}}"
   tls.myCert="{{ logging.listen_and_forward.cert }}"
@@ -48,7 +48,9 @@ action(type="omrelp"
 {% if logging.forward is defined %}
 module(load="imuxsock")
 module(load="imrelp" ruleset="relp")
-input(type="imrelp" port="20514"
+input(type="imrelp" 
+  target="{{ remote_logging_server | default('10.1.1.1')}}"
+  port="{{ remote_logging_port | default('20514') }}"
   tls="on" 
   tls.caCert="{{ logging.forward.ca}}"
   tls.myCert="{{ logging.forward.cert }}"
@@ -64,6 +66,7 @@ auth,authpriv.* action(
   File="/var/log/secure.log"
   FileOwner="root"
   FileGroup="adm"
+  FileCreateMode="0640"
   asyncWriting="on"
   ioBufferSize="16k"
   queue.workerthreadminimummessages="100" #number of messages that trigger a new worker thread, increments
@@ -77,6 +80,7 @@ cron.* action(
   type="omfile"
   File="/var/log/cron.log"
   FileOwner="root"
+  FileCreateMode="0640"
   FileGroup="adm"
 )
 
@@ -94,11 +98,13 @@ kern.* action(
   File="/var/log/kern.log"
   FileOwner="root"
   FileGroup="adm"
+  FileCreateMode="0640"
 )
 mail.* action(
   name="action_mail"
   type="omfile"
   File="/var/log/mail.log"
+  FileCreateMode="0640"
   FileOwner="root"
   FileGroup="adm"
 )
@@ -108,6 +114,7 @@ mail.* action(
   File="/var/log/messages"
   FileOwner="root"
   FileGroup="adm"
+  FileCreateMode="0640"
   queue.workerthreads="2"
 )
 
@@ -115,6 +122,7 @@ mail.* action(
   name="action_debug"
   type="omfile"
   File="/var/log/debug.log"
+  FileCreateMode="0640"
   FileOwner="root"
   FileGroup="adm"
 )
@@ -124,6 +132,7 @@ news.* action(
   type="omfile"
   File="/var/log/news.log"
   FileOwner="root"
+  FileCreateMode="0640"
   FileGroup="adm"
 )
 
@@ -133,6 +142,7 @@ user.* action(
   File="/var/log/user.log"
   FileOwner="root"
   FileGroup="adm"
+  FileCreateMode="0640"
 )
 *.emerg action(
   name="action_emerge"

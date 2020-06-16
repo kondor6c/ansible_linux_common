@@ -1,29 +1,50 @@
 ---
+
+- name: install lsof
+  yum:
+    name: lsof
+    state: latest
+  become: true
 - name: 'priority package update, patches security related concerns quickly'
   yum:
-    security: yes
+    name: "*"
+    security: "{{ only_security | default('no') }}" # this only works for RHEL and OEL, Centos does not have update info
+    bugfix: "{{ only_bugfix | default('no') }}"
     state: latest
     update_cache: yes
+  become: true
   register: updated_packages
-- name: 'create map of updated packages and their files'
-  set_fact: "{{ updated_files | default({}) | combine( { item:  | basename } ) }}"
-  with_items: "{{ updated_packages }}"
-
-- name: 'check if any packages that were updated are running'
-  shell: "lsof -nP +L1 | awk '{print $10}'"
-  register: lsof_deleted
-- name: 'rpm query for the files'
-  command: rpm -qf {{ item }} 
-  register: packages_running_with_deleted_files
-  loop: "{{ packages_running_with_deleted_files.stdout.split('\n') }}"
-- name: 'query packages for systemd units that could be restarted'
-  shell: grep -oP '(/usr/lib/systemd/system/)\K\w.*'
-  register: potentially_restartable
+- name: check for updated services
+  block:
+    
+    - name: 'check if any packages that were updated are running'
+      shell: "lsof -nP +L1 | awk '!/\\/tmp\\//{if ($10 != \"NAME\") {gsub(\";.*\",\"\",$10) ; print $10} }'|sort|uniq"
+      become: true
+      register: deleted
+    - name: 'rpm query for the files'
+      command: "rpm -qf {{ item }} "
+      register: packages_running_with_deleted_files
+      ignore_errors: yes
+      loop: "{{ deleted.stdout_lines }}"
+    - name: get service files
+      shell: systemctl --type=service --state=active |awk '/service/{print $1 }'
+      register: running_service_files
+      
+    - name: 'query packages for systemd units that could be restarted'
+      command: "rpm -ql {{ item.stdout }} "
+      register: potentially_restartable
+      loop: "{{ packages_running_with_deleted_files.results }}"
+    - name: intersect running services with files of packages that have open files in (deleted)
+      set_fact:
+        deleted: "{{ running_service_files | intersect(package_file.stdout_lines) }}"
+      loop: "{{ potentially_restartable.results }}"
+      loop_control:
+        label: "checking for running service files for intersection of deleted RPM contents {{ package_file }}"
+        loop_var: package_file
+    - name: print restartable services
+      debug:
+        msg: "{{ deleted }}"
+#  when: updated_packages.changed == True
   
 #https://blog.habets.se/2011/07/OpenSSH-certificates.html
-var:
-    message: |
-            Right now the gpg key is unprotected, you can change that by changing the key's password by using `gpg2 --edit-key {{ user.gpg_id }} < passwd` then save
-
-
 
