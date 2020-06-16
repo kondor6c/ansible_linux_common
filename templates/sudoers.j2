@@ -6,11 +6,11 @@
 # User_Alias ADMINS = jsmith, mikem
 # Cmnd_Alias NETWORKING = /sbin/route, /sbin/ifconfig, /bin/ping, /sbin/dhclient, /usr/bin/net, /sbin/iptables, /usr/bin/rfcomm, /usr/bin/wvdial, /sbin/iwconfig, /sbin/mii-tool
 # Cmnd_Alias SOFTWARE = /bin/rpm, /usr/bin/up2date, /usr/bin/yum
-Cmnd_Alias SERVICES = /sbin/service, /sbin/systemctl, /sbin/journalctl
-Cmnd_Alias CONTAINER = /usr/sbin/docker
+#Cmnd_Alias SERVICES = /sbin/service, /sbin/systemctl, /sbin/journalctl
+#Cmnd_Alias CONTAINER = /usr/sbin/docker
 # Cmnd_Alias STORAGE = /sbin/fdisk, /sbin/sfdisk, /sbin/parted, /sbin/partprobe, /bin/mount, /bin/umount
 # Cmnd_Alias DELEGATING = /usr/sbin/visudo, /bin/chown, /bin/chmod, /bin/chgrp 
-Cmnd_Alias PROCESSES = /bin/nice, /bin/kill, /usr/bin/kill, /usr/bin/killall
+#Cmnd_Alias PROCESSES = /bin/nice, /bin/kill, /usr/bin/kill, /usr/bin/killall
 # Cmnd_Alias DRIVERS = /sbin/modprobe
 Defaults   !visiblepw
 
@@ -29,8 +29,9 @@ root	ALL=(ALL) 	ALL
 
 
 %sudo		ALL=(ALL)	ALL
-%adm		ALL=SERVICES, SOFTWARE, PROCESSES
-%users		ALL=CONTAINER
+%devops ALL=(ALL)  NOPASSWD: ALL
+#%adm		ALL=SERVICES, SOFTWARE, PROCESSES
+#%users		ALL=CONTAINER
 
 ## Read drop-in files from /etc/sudoers.d (the # here does not mean a comment)
 ## think of this as `(hash)include <stdio.h>` like in the C programming language

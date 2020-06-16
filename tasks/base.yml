@@ -1,21 +1,29 @@
 ---
-- name: protect block
-  block:
-  - name: 'import certificates from variable'
-    copy:
-      content: "{{ item.value }}"
-      dest: "/etc/pki/ca-trust/source/anchors/{{ item.key }}"
-      mode: 0664
-      owner: root
-      group: root
-      setype: cert_t
-      validate: "openssl x509 -in %s"
-    loop: "{{ trusted_ca_map | dict2items }}"
-    register: add_certs
-  when: trusted_ca_map is defined and (trusted_ca_map | length > 1)
+- name: 'import certificates from variable'
+  copy:
+    content: "{{ item.value }}"
+    dest: "/etc/pki/ca-trust/source/anchors/{{ item.key }}"
+    mode: 0664
+    owner: root
+    group: root
+    setype: cert_t
+    validate: "openssl x509 -in %s"
+  loop: "{{ trusted_ca_map |  default({}) | dict2items }}"
+- name: 'transfer certificates to trust directory'
+  copy:
+    src: "{{ item }}"
+    dest: "/etc/pki/ca-trust/source/anchors/{{ item }}"
+    mode: 0664
+    owner: root
+    group: root
+    setype: cert_t
+    validate: "openssl x509 -in %s"
+  loop: "{{ trusted_ca_file_list }}"
+  # reconsider this, whereas I like shipping certificates as static items, maybe they do not belong in a role, and indeed should be a variable that is presented as an argument/param more or less
+  when: trusted_ca_file_list is defined 
+
 - name: 'trust certs'
   command: update-ca-trust force-enable
-  when: add_certs.changed
 - name: 'GPG file actions'
   block:
   - name: 'transfer GPG keys to directory'
@@ -26,62 +34,95 @@
       owner: root
       group: root
       setype: cert_t
-    register: rpm_keys
     loop: "{{ rpm_gpg_keys }}"
   - name: 'trust RPM GPG key, preview-interface'
     rpm_key:
       state: present
       key: "/etc/pki/rpm-gpg/{{ item }}"
-    when: rpm_keys.changed
     loop: "{{ rpm_gpg_keys }}"
-- name: 'delete default repository files'
-  find:
-    paths: /etc/yum.repos.d/
-    patterns: '*repo'
-  register: existing_repository_files
-- name: 'delete old repository files'
-  file:
-    path: "{{ item.path }}"
-    state: absent
-  run_once: true
-  loop: "{{  existing_repository_files.files }}"
-- name: 'check for /etc/dnf, sometimes fedora, sometimes centos or rhel'
+- name: 'check for an entitlement'
   stat:
-    path: /etc/dnf
-  register: dnf_dir
-- name: 'custom dnf config, yum proxy'
-  template:
-    dest: "/etc/dnf/dnf.conf"
-    src: dnf.conf.j2
-    mode: "0644"
-    owner: "root"
-    group: "root"
-  when: dnf_dir.stat.isfile is defined
-- name: all yum repos as yaml
-  set_fact: 
-    yum_repos: "{{ default_yum_repos |flatten(levels=1)| selectattr('tags', 'search', criteria) |list  }}"
-  when: yum_repos is not defined and criteria is defined
-- name: 'install custom repositories'
-  template:
-    dest: "/etc/yum.repos.d/{{ item.title }}.repo"
-    src: repo.ini.j2
-    mode: "0644"
-    owner: "root"
-    group: "root"
-    setype: system_conf_t
-  loop: "{{ yum_repos |flatten(levels=1) }}"
-- name: 'CENT: install packages that might fail, due to different names'
+    path: /etc/pki/entitlement
+  register: entitlement
+- name: 'yum repo block'
+  block:
+    - name: 'move certificates to trust directory'
+      copy:
+        src: "{{ item }}"
+        dest: "/etc/pki/rpm-gpg/{{ item }}"
+        mode: 0444
+        owner: root
+        group: root
+        setype: cert_t
+      loop: "{{ rpm_gpg_keys }}"
+    - name: 'delete default repository files'
+      find:
+        paths: /etc/yum.repos.d/
+        patterns: '*repo'
+      register: existing_repository_files
+    - name: 'delete old repository files'
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      run_once: true
+      loop: "{{  existing_repository_files.files }}"
+    - name: 'check for /etc/dnf, sometimes fedora, sometimes centos or rhel'
+      stat:
+        path: /etc/dnf
+      register: dnf_dir
+    - name: 'custom dnf config, yum proxy'
+      template:
+        dest: "/etc/dnf/dnf.conf"
+        src: dnf.conf.j2
+        mode: "0644"
+        owner: "root"
+        group: "root"
+      when: dnf_dir.stat.isfile is defined
+    - name: 'install custom repositories'
+      template:
+        dest: "/etc/yum.repos.d/{{ item.title }}.repo"
+        src: repo.ini.j2
+        mode: "0644"
+        owner: "root"
+        group: "root"
+        setype: system_conf_t
+      loop: "{{ yum_repos |flatten(levels=1) }}"
+  when: not entitlement.stat.exists 
+- name: 'install packages that might fail, due to different names'
   yum:
     name: "{{ centos_packages.install }}"
     state: present
-- name: 'CENT: remove packages that a default installs and we totally do not need'
+- name: 'remove packages that a default installs and we totally do not need'
   yum: 
     name: "{{ centos_packages.absent }}"
     state: absent
-- name: 'CENT: upgrade all packages'
+- name: 'upgrade all packages, asynchronously'
   yum:
     name: '*'
     state: latest
+    exclude: "{{ yum_upgrade_exclude |default('') }}"
+  async: 600
+  register: yum_upgrade
+  poll: 0
+- name: test import
+  import_tasks: clamav.yml
+  when: 'clamav' in centos_packages.install
+- name: 'systemd-networkd allows for many more features and control than regular init style network scripts'
+  template:
+    src: networkd-external.network
+    dest: /etc/systemd/network/
+    owner: root
+    group: root
+    mode: '0644'
+    setype: etc_t
+- name: 'systemd-networkd allows for many more features and control than regular init style network scripts'
+  template:
+    src: networkd-internal.network
+    dest: /etc/systemd/network/
+    owner: root
+    group: root
+    mode: '0644'
+    setype: etc_t
 - name: 'core sudoers file'
   template:
     src: sudoers.j2
@@ -100,10 +141,6 @@
     mode: '0600'
 - name: static hosts entries
   block:
-  - name: 'install net-tools provides arp seeding'
-    yum:
-      name: net-tools
-      state: latest
     
   - name: 'hosts, for localnet domain'
     template:
@@ -112,10 +149,7 @@
       owner: root
       group: root
       mode: '0644'
-  - name: 'install net-tools provides arp seeding'
-    yum:
-      name: net-tools
-      state: latest
+
   - name: 'ethers, reduces arp traffic'
     template:
       src: ethers.j2
@@ -212,23 +246,6 @@
     name: rsyslog
     enabled: yes
     state: started
-- name: systemd-networkd allows for many more features and control than regular init style network scripts
-  template:
-    src: networkd-external.network
-    dest: /etc/systemd/network/
-    owner: root
-    group: root
-    mode: '0644'
-    setype: etc_t
-- name: systemd-networkd allows for many more features and control than regular init style network scripts
-  template:
-    src: networkd-internal.network
-    dest: /etc/systemd/network/
-    owner: root
-    group: root
-    mode: '0644'
-    setype: etc_t
-
 #- name: 'set selinux context on container dir' 
   #/var/log/audit(/.*)?                      system_u:object_r:svirt_sandbox_file_t
 - name: 'let sysadm_r (devops) login with ssh'
@@ -236,9 +253,18 @@
     name: ssh_sysadm_login
     state: yes
     persistent: yes
-- name: 'add devops version'
-  shell: echo '1.0.0' > /devops_version
+- name: 'wait for yum upgrade to finish'
+  async_status:
+    jid: "{{ yum_upgrade.ansible_job_id }}"
+  register: upgrade_check
+  until: upgrade_check.finished
+  retries: 90
 
+- name: 'disable stock repositories'
+  command: "yum-config-manager --disable base,updates,extras"
+- name: print
+  debug:
+    msg: "{{ upgrade_check.results[0]| string |regex_search('*-release') }}"
 - name: relabel
   command: restorecon -Rv /
 
