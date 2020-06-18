@@ -2,6 +2,7 @@
 centos_packages:
   install:
     - clamav
+    - clamav-update
     - aide
     - rng-tools
     - nss-tools

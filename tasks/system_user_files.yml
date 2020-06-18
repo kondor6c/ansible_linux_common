@@ -38,7 +38,7 @@
 - name: 'home files'
   copy:
     owner: "{{ item.0 }}"
-    content: "{{ item.1.files. }}"
+    content: "{{ item.1.files }}"
   loop: "{{ files | subelements('files') }}"
 - name: 'create 2fa file'
   template:

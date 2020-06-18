@@ -25,12 +25,19 @@
       loop_var: u
     tags:
       - useradd
+  - name: 'print'
+    debug:
+      msg: "{{ u.0 }} and pub {{ u.1 }}"
+    loop: "{{ user_map |subelements('public_keys') }}"
+    loop_control:
+      loop_var: u
+
   - name: 'auth_key module '
     authorized_key:
-      user: "{{ u.name }}"
-      key: "{{ u.public_keys[0] }}"
-    when: "u.public_keys[0] | length >= 1"
-    loop: "{{ user_map }}"
+      user: "{{ u.0.name }}"
+      key: "{{ u.1 }}"
+    when: u | length >= 1
+    loop: "{{ user_map |subelements('public_keys') }}"
     loop_control:
       loop_var: u
     tags:
