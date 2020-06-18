@@ -1,15 +1,23 @@
 [main]
 gpgcheck=1
-installonly_limit=3
-clean_requirements_on_remove=True
+installonly_limit=5
+clean_requirements_on_remove=1
 {% if yum_proxy is defined %}
 proxy={{ yum_proxy }}
 {% endif %}
-best=True
-skip_if_unavailable=True
-zchunk=False
-keepcache=yes
+best=1
+tolerant=1
+skip_if_unavailable=1
+zchunk=0
+keepcache=1
 countme=yes
 max_parallel_downloads=5
-repo_gpgcheck=yes
+repo_gpgcheck=1
 cachedir=/var/spool/rpm-cache
+
+debuglevel=2
+logfile=/var/log/yum.log
+
+history_record=0
+obsoletes=1
+plugins=1

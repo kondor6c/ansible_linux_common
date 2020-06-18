@@ -1,0 +1,120 @@
+---
+- name: all yum repos as yaml
+  set_fact:
+    yum_repos: "{{ default_yum_repos |flatten(levels=1)| selectattr('tags', 'search', yum_criteria) |list  }}"
+  when: yum_repos is not defined and yum_criteria is defined
+- name: 'GPG file actions'
+  block:
+    - name: 'transfer GPG keys to directory'
+      copy:
+        src: "{{ item }}"
+        dest: "/etc/pki/rpm-gpg/{{ item }}"
+        mode: 0444
+        owner: root
+        group: root
+        setype: cert_t
+      loop: "{{ rpm_gpg_keys | intersect(yum_repos | select('match','gpg_key') | regex_replace('file:///etc/pki/rpm-gpg/','') |list) }}"
+      register: rpm_keys
+    - name: 'trust RPM GPG key, preview-interface'
+      rpm_key:
+        state: present
+        key: "/etc/pki/rpm-gpg/{{ item }}"
+      loop: "{{ rpm_gpg_keys }}"
+      when: rpm_keys.changed
+# stats
+- name: 'check for an entitlement, helps to determine if RHEL or CentOS'
+  stat:
+    path: /etc/pki/entitlement
+  register: entitlement
+- name: 'check for /etc/dnf, sometimes fedora, sometimes centos or rhel'
+  stat:
+    path: /etc/dnf
+  register: dnf_dir
+
+- name: 'custom dnf config, yum proxy'
+  template:
+    dest: "/etc/dnf/dnf.conf"
+    src: dnf.conf.j2
+    mode: "0644"
+    owner: "root"
+    group: "root"
+  when: dnf_dir.stat.isfile is defined
+- name: 'custom yum config, yum proxy'
+  template:
+    dest: "/etc/yum.conf"
+    src: dnf.conf.j2
+    mode: "0644"
+    owner: "root"
+    group: "root"
+  when: dnf_dir.stat.exists == False 
+- name: 'yum repo block'
+  block:
+    - name: 'move certificates to trust directory'
+      copy:
+        src: "{{ item }}"
+        dest: "/etc/pki/rpm-gpg/{{ item }}"
+        mode: 0444
+        owner: root
+        group: root
+        setype: cert_t
+      loop: "{{ rpm_gpg_keys }}"
+ ## Begin Approach 1
+ #  - name: 'get list of existing repository files'
+ #    find:
+ #      paths: /etc/yum.repos.d/
+ #      patterns: '*repo'
+ #    register: yum_repos
+ #  - name: 'see if RPM owns the repo, if so, try to disable it'
+ #    command: "rpm -qf {{ repo_file.path }}"
+ #    ignore_errors: yes
+ #    label: "check"
+ #    loop: "{{ yum_repos.files }}"
+ #    loop_control:
+ #      loop_var: repo_file
+ #    register: stock_repo
+ # End approach 1
+
+  # Begin approach 2
+    - name: 'rpm '
+      command: "rpm -qa" #| grep -e '-release' |xargs rpm -ql |grep repo"
+      register: all_packages
+
+    - name: 'filter and loop'
+      command: "rpm -ql {{ yum_pkg }}"
+      register: stock_repos
+      loop: "{{ all_packages.stdout_lines | select('match','^.*(-release|-repos)')| list}}"
+      loop_control:
+        label: "checking for repository files in RPM: {{ yum_pkg }}"
+        loop_var: yum_pkg
+  # End approach 2
+  # Common across approaches
+    - name: 'disable stock repositories'
+      lineinfile:
+        path: "{{ repo_file.1 }}"
+        state: present
+        regexp: 'enabled=1'
+        line: 'enabled=0'
+      loop: "{{ stock_repos.results | subelements('stdout_lines') }}"
+      loop_control:
+        loop_var: repo_file
+        label: "disabling release repository file: {{ repo_file }}"
+      when: repo_file.1.endswith('repo')
+    - name: 'install custom repositories'
+      template:
+        dest: "/etc/yum.repos.d/{{ item.title }}.repo"
+        src: repo.ini.j2
+        mode: "0644"
+        owner: "root"
+        group: "root"
+        setype: system_conf_t
+      when: yum_repos | length > 1
+      loop: "{{ yum_repos |flatten(levels=1) }}"
+  when: not entitlement.stat.exists 
+- name: 'install packages that might fail, due to different names'
+  yum:
+    name: "{{ centos_packages.install }}"
+    state: present
+- name: 'remove packages that a default installs and we totally do not need'
+  yum: 
+    name: "{{ centos_packages.absent }}"
+    state: absent
