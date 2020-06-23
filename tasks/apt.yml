@@ -1,0 +1,86 @@
+---
+- name: 'if no apt repositories are defined, use distribution defaults from role'
+  set_fact:
+    apt_repos: "{{ default_apt_repos |flatten(levels=1)| selectattr('tags', 'search', pkg_criteria) |list  }}"
+  when: apt_repos is not defined
+- name: apt preferences
+  template:
+    src: apt.conf
+    dest: /etc/apt/apt.conf
+    owner: root
+    group: root
+    mode: '0644'
+- name: 'remote package keys'
+  block:
+    - name: 'pull key'
+      local_action:
+        module: get_url
+        url: "{{ remote_key }}"
+        dest: "/tmp/{{ remote_key | split('/')[-1] }}"
+      loop: "{{ lookup('list', apt_key_list) }}"
+      register: pkg_gpg_keys
+      loop_control:
+        loop_var: remote_key
+      when: remote_key.startswith('http')
+    - name: 'trust apt GPG key'
+      apt_key:
+        state: present
+        data: "{{ lookup('file', key_content.dest) }}"
+      loop: "{{ pkg_gpg_keys.results }}"
+      when: pkg_gpg_keys.changed
+      loop_control:
+        loop_var: key_content
+  when: apt_key_list is defined and apt_key_list | length >= 1
+- name: 'get list of existing repository files'
+  find:
+    paths: /etc/apt/
+    depth: 2
+    patterns: 'sources.*'
+  register: stock_apt_repos
+- name: 'remove apt sources file'
+  file:
+    state: absent
+    path: "{{ repo_file.path }}"
+  loop: "{{ stock_apt_repos.files }}"
+  loop_control:
+    loop_var: repo_file
+- name: create directory again
+  file:
+    path: /etc/apt/sources.list.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+- name: create config again
+  file:
+    path: /etc/apt/sources.list.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+    
+- name: 'install custom repositories'
+  template:
+    dest: "/etc/apt/sources.list.d/{{ item.title | default(item.options.Suites.replace('$releasever',ansible_distribution_release) + item.options.Components.replace(' ','-')) }}.sources"
+    src: sources.list
+    mode: "0644"
+    owner: "root"
+    group: "root"
+  when: apt_repos | length > 1
+  loop: "{{ apt_repos |flatten(levels=1) }}"
+      
+- name: 'remove distro specific packages with apt. Removing first because ubuntu dependency structure'
+  apt:
+    name: "{{ apt_packages.absent + common_packages.absent }}"
+    state: "absent"
+    autoremove: yes
+    purge: yes
+- name: 'install distro specific packages with apt, with present, auto start should not occur'
+  apt:
+    name: "{{ apt_packages.install + common_packages.install }}"
+    state: "present"
+    update_cache: yes
+#- name: 
+#Package: *
+#Pin: {{ version }} release a=kali-bleeding-edge
+#Pin-Priority: 500

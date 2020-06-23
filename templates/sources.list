@@ -1,0 +1,8 @@
+Types: {{ item.options.type | default('deb') }}
+URIs: {% for mirror in item.mirrors %}{{ mirror.protocol }}{{ mirror.host }}{{ mirror.path }}
+{% endfor %}
+{% for key, value in item.options.items() %}
+{% if value != None %}
+{{ key }}: {{ value | replace('$releasever', ansible_distribution_release) }}
+{% endif %}
+{% endfor %}

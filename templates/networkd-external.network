@@ -1,11 +1,35 @@
 [Match]
-Name=eth0
+{% if external_interface == 'primary' %}{% set external_interface == ansible_default_ipv4.alias %}
+{% elif external_interface | search(':') %}{% set external_interface == %}
+Name={{ external_interface }}
+MACAddress={{ ansible_default_ipv4['macaddress'] }}
+{% if systemd_ver >= 245 %}
+[Route]
+Gateway=_dhcp
+InitialCongestionWindow=20
+InitialAdvertisedReceiveWindow=20
+QuickAck=True
+FastOpenNoCookie=True
+{% endif %}
 
 [Network]
+{% if externalv4 == "dhcp" and externalv6 == "dhcp" %}
 DHCP=yes
-IPForward=yes
+{% elif externalv4 == "dhcp" %}
+DHCP=ipv4
+{% elif externalv6 == "dhcp" %}
+DHCP=ipv6
+{% endif %}{% if externalv4 == "^[1-2]" %}
+Address={{ externalv4 }}
+Gateway={{ externalv4_gateway }}
+{% endif %}{% if externalv6 == ":" %} 
+Address={{ externalv6 }}
+Gateway={{ externalv6_gateway }}
+
+{% else %}
+Address=DHCP
+{% endif %}
 LLDP=false
-IPv6Token=::1
 
 [DHCPv4]
 UseMTU=true

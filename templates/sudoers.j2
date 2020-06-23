@@ -1,5 +1,4 @@
 ## Sudoers initial template from fedora by Kevin Faulkner
-
 # compress_io is on by default, replay logs will be zlib
 # Aliases
 ## User Aliases
@@ -27,12 +26,14 @@ Defaults    secure_path = /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbi
 root	ALL=(ALL) 	ALL
 %wheel		ALL=(ALL)	NOPASSWD: ALL
 
-
+# LEGACY, use wheel, not sudo
 %sudo		ALL=(ALL)	ALL
-%devops ALL=(ALL)  NOPASSWD: ALL
 #%adm		ALL=SERVICES, SOFTWARE, PROCESSES
 #%users		ALL=CONTAINER
 
 ## Read drop-in files from /etc/sudoers.d (the # here does not mean a comment)
 ## think of this as `(hash)include <stdio.h>` like in the C programming language
 #includedir /etc/sudoers.d
+{% if user_groups | length >= 1 %}{% for g in user_groups %}
+%{{ g.name }} {{ g.sudo }}
+{% endfor %}{% endif %}
