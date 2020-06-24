@@ -1,0 +1,63 @@
+---
+
+- name: 'create volume group'
+  lvol:
+    vg: "VG{{ d.name.split('_')[0] }}"
+    lv: "LV{{ d.name.split('_')[1] }}"
+    pvs: "{{ d.devices }}"
+    size: "{{ d.size | default('100%FREE') }}"
+  loop: "{{ disks }}"
+  when: d.fs.split('_')[1] == 'lvm' 
+  loop_control:
+    loop_var: d
+- name: create the filesystem
+  filesystem:
+    dev: "/dev/{{ d.fs }}"
+    fstype: "{{ d.fs }}"
+    resizefs: yes
+    opts: "{{ d.fs_opts }}"
+  loop: "{{ disks }}"
+  when: d.name 
+  loop_control:
+    loop_var: d
+
+- name: systemd mount
+  template:
+    dest: "/etc/systemd/system/{{ d.mount.replace('/','-')[1:-1] }}.mount"
+    src: systemd.mount
+    mode: '0644'
+    owner: root
+    group: root
+  loop: "{{ disks }}"
+  register: systemd_mounts
+  loop_control:
+    loop_var: d
+    
+- name: enable mounts
+  systemd:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  loop: "{{ systemd_mounts }}"
+disk:
+  - name: lv_vg
+    size: 500GB
+    fs: xfs
+    fs_opts: -n ftype=1 
+    mount: /var/lib/docker
+    devices:
+      - vdb
+      - vdc
+  - name: simple
+    size: 750GB
+    fs: ext4
+    mount: /srv/containers
+    devices:
+      - vdd
+  - name: resizable_drive
+    size: 750GB
+    fs: ext4
+    mount: /data
+    devices:
+      - vdd
+  
