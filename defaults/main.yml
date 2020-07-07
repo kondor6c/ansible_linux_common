@@ -45,7 +45,7 @@ apt_packages:
     #- wireless-regdb
 ntp_servers:
   - time.nist.gov
-package_proxy: _none_ #http://user@pass:proxy.localnet:3128
+package_proxy: _none_ #example: http://user@pass:proxy.localnet:3128
 http_proxy: _none_
 https_proxy: proxy.localnet
 performance:
@@ -58,8 +58,7 @@ groups:
   - name: automation
     gid: 2222
     status: present
-    sudo:
-      data: "ALL=(ALL)	NOPASSWD: ALL"
+    sudo: "ALL=(ALL)	NOPASSWD: ALL"
 
 user_message: |
             Right now the gpg key is unprotected, you can change that by changing the key's password by using `gpg2 --edit-key {{ user.gpg_id }} < passwd` then save
@@ -167,27 +166,42 @@ net_hosts:
     tags:
       - regular_machine
   - interfaces:
-      - address: 10.1.1.0
+      - address: 127.0.0.1
         name: pixel
     domain: rubiconproject.com
     tags:
       - example_of_etc_hosts_workaround
-  - interfaces:
-      - address: dhcp
-        hwaddr: iface_name || primary
-        name: self
-    domain: localnet
-    tags:
-      - example_of_self_configuration_for_networkd
-
-external_interface: br0 # interface name, primary OR MAC address
-externalv4: "10.1.1.1/24" # ip address, could have cidr embedded
-
+exclude_criteria: 
+addresses: 
+  primary:
+    - '10.1.1.1/24'
+    - 'fe80::fc54:ff:fecb:61ea/64'
+#externalv4: "10.1.1.1/24" # ip address, could have cidr embedded
+dns_server: 
+  - dhcp
+disk:
+  - name: lv_vg
+    size: 500GB
+    fs: xfs
+    fs_opts: -n ftype=1 
+    mount: /var/lib/docker
+    devices:
+      - vdb
+      - vdc
+  - name: simple
+    size: 750GB
+    fs: ext4
+    mount: /srv/containers
+    devices:
+      - vdd
+  - name: resizable_drive
+    size: 750GB
+    fs: ext4
+    mount: /data
+    devices:
+      - vdd
+  
 trusted_ca_file_list:
-  - ca_home_intermediate_ed.pem
-  - ca_home_intermediate_rsa.pem
-  - ca_home_root_ed.pem
-  - ca_home_root_rsa.pem
   - ca-rds-ca-2019-root.pem
 rpm_gpg_keys:
   - RPM-GPG-KEY-CentOS-7
@@ -524,7 +538,7 @@ default_yum_repos:
     options:
       gpgcheck: 1
       type: rpm
-      enabled: 0
+      enabled: 1
     title: cr
     tags:
       - epel
@@ -569,7 +583,7 @@ default_yum_repos:
     options:
       gpgcheck: 1
       type: rpm
-      enabled: 0
+      enabled: 1
     tags:
       - el8
     title: PowerTools
@@ -685,6 +699,20 @@ default_yum_repos:
     mirrors:
       - host: download.fedoraproject.org
         path: /pub/epel/playground/$releasever/Everything/$basearch
+        protocol: https://
+    options:
+      gpgcheck: 1
+      type: rpm
+      enabled: 0
+    title: epel-playground
+    tags:
+      - epel
+      - el8
+  - gpg_key: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
+    long_name: Extra Packages for Enterprise Linux $releasever - $basearch
+    mirrors:
+      - host: download.fedoraproject.org
+        path: /pub/epel/$releasever/Everything/$basearch
         protocol: https://
     options:
       gpgcheck: 1

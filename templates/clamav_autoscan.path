@@ -1,0 +1,9 @@
+[Unit]
+Description=Dispatch Password Requests to Console Directory Watch
+ConditionPathExists=!{{ clam_dir }}/stop_autoscan
+PartOf=clamscan.service
+
+[Path]
+PathModified={{ clamav_local_filesystem_autoscan }}
+PathExistsGlob={{ clamav_local_filesystem_autoscan_pattern | default('*') }}
+MakeDirectory=yes

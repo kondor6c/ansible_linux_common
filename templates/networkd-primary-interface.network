@@ -1,0 +1,24 @@
+[Match]
+{% if 'primary' in iface.key or ( iface.key | list |intersect(ansible_interfaces) | length >= 1 ) %}
+Name={{ iface.key.replace('primary', ansible_default_ipv4.alias) }}
+{% elif iface.key | regex_search(':') | bool %}
+MACAddress={{ iface.key | default( ansible_default_ipv4['macaddress']) }}
+{% endif %}
+
+[Network]
+{% if "dhcpv6" and "dhcp" in iface.value %}
+DHCP=yes
+Address=DHCP
+{% elif "dhcp" in iface.value %}
+DHCP=ipv4
+Address=DHCP
+{% elif 'dhcpv6' in iface.value %}
+DHCP=ipv6
+Address=DHCP
+LLDP=false
+{% else %}
+{% for ip in iface.value %}{% if '-' in ip %}
+Address={{ ip.split('-')[0] }}
+Gateway={{ ip.split('-')[1] }}
+{% endif %}{% endfor %}
+{% endif %}

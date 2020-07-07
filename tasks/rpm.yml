@@ -1,7 +1,7 @@
 ---
 - name: all yum repos as yaml
   set_fact:
-    yum_repos: "{{ default_yum_repos |flatten(levels=1)| selectattr('tags', 'search', pkg_criteria) |list  }}"
+    yum_repos: "{{ default_yum_repos |flatten(levels=1)| selectattr('tags', 'search', pkg_criteria) | rejectattr('tags','contains',exclude_criteria ) |list  }}"
   when: yum_repos is not defined and pkg_criteria is defined
 - name: 'GPG file actions'
   block:
@@ -33,8 +33,8 @@
 
 - name: 'custom dnf config, yum proxy'
   template:
-    dest: "/etc/dnf/dnf.conf"
-    src: dnf.conf.j2
+    dest: /etc/dnf/
+    src: dnf.conf
     mode: "0644"
     owner: "root"
     group: "root"
@@ -87,21 +87,42 @@
         loop_var: yum_pkg
   # End approach 2
   # Common across approaches
+    - name: set repo files list, this replaces complicated subelements into one set fact
+      set_fact:
+        repo_list: "{% set rlist = [] %}{% for element in stock_repos.results %}{% for i in element.stdout_lines | select('match','.*repo$') %}{% set _ = rlist.append(i) %}{% endfor %}{% endfor %}{{ rlist | list }}"
+    - name: check file
+      stat:
+        path: "{{ file_path }}"
+      loop: "{{ repo_list }}"
+      register: yum_repo_file_check
+      loop_control:
+        loop_var: file_path
+    - name: 'touch if file was not there'
+      file:
+        path: "{{ files.file_path }}"
+        state: touch
+        owner: root
+        group: root
+        setype: etc_t
+      when: files.stat.exists == False
+      loop: "{{ yum_repo_file_check.results }}"
+      loop_control:
+        loop_var: files
     - name: 'disable stock repositories'
       lineinfile:
-        path: "{{ repo_file.1 }}"
+        path: "{{ file.file_path }}"
         state: present
-        regexp: 'enabled=1'
+        regexp: '^enabled='
         line: 'enabled=0'
-      loop: "{{ stock_repos.results | subelements('stdout_lines') }}"
+      when: file.stat.exists == True
+      loop: "{{ yum_repo_file_check.results }}"
       loop_control:
-        loop_var: repo_file
-        label: "disabling release repository file: {{ repo_file }}"
-      when: repo_file.1.endswith('repo')
+        loop_var: file
+        label: "disabling release repository file: {{ file }}"
     - name: 'install custom repositories'
       template:
         dest: "/etc/yum.repos.d/{{ item.title }}.repo"
-        src: repo.ini.j2
+        src: repo.ini
         mode: "0644"
         owner: "root"
         group: "root"
@@ -111,9 +132,9 @@
   when: not entitlement.stat.exists
 - name: 'install packages that might fail, due to different names'
   yum:
-    name: "{{ packages.install + dnf_packages.install }}"
+    name: "{{ common_packages.install + dnf_packages.install }}"
     state: present
 - name: 'remove packages that a default installs and we totally do not need'
   yum:
-    name: "{{ packages.absent + dnf_packages.absent }}"
+    name: "{{ common_packages.absent + dnf_packages.absent }}"
     state: absent
