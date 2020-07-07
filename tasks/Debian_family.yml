@@ -1,0 +1,22 @@
+ 
+- name: 'remove sudo group'
+  group:
+    name: sudo
+    state: absent
+- name: 'add wheel group, like every other distribution'
+  group:
+    name: wheel
+    state: present
+- name: app armor config
+  template:
+    src: apparmor_parser.conf
+    dest: /etc/apparmor/parser.conf
+    owner: root
+    group: root
+    mode: '0644'
+  register: apparmor_parser
+- name: reload app armor
+  systemd:
+    name: apparmor
+    state: reloaded
+  when: apparmor_parser.changed

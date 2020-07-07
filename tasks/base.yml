@@ -1,8 +1,12 @@
 ---
+- name: set pki location
+  set_fact:
+    filesystem_pki: "{% if ansible_os_family == 'RedHat' %}/etc/pki/ca-trust/source/anchors/{% elif ansible_os_family == 'Debian' %}/etc/ssl/certs/{% endif %}"
+    
 - name: 'import certificates from variable'
   copy:
     content: "{{ item.value }}"
-    dest: "/etc/pki/ca-trust/source/anchors/{{ item.key }}"
+    dest: "{{ filesystem_pki }}{{ item.key }}"
     mode: 0664
     owner: root
     group: root
@@ -10,88 +14,118 @@
     validate: "openssl x509 -in %s"
   loop: "{{ trusted_ca_map |  default({}) | dict2items }}"
   register: cert_map
+  
 - name: 'transfer certificates to trust directory'
   copy:
     src: "{{ item }}"
-    dest: "/etc/pki/ca-trust/source/anchors/{{ item }}"
+    dest: "{{ filesystem_pki }}{{ item }}"
     mode: 0664
     owner: root
     group: root
     setype: cert_t
     validate: "openssl x509 -in %s"
   loop: "{{ trusted_ca_file_list }}"
-  when: trusted_ca_file_list is defined 
-- name: 'trust certs'
-  command: update-ca-trust force-enable
-  when: cert_map.changed
+  when: trusted_ca_file_list is defined
+  
+- name: 'initial redhat distribution specific block'
+  block:
+    - name: 'typically redhat method'
+      command: update-ca-trust force-enable
+      when: cert_map.changed
+    - name: 'package manager related tasks'
+      include_tasks: "rpm.yml"
+  when: ansible_os_family == 'RedHat' or ansible_os_family == 'Archlinux'
 
-- name: 'rpm related tasks'
-  import_tasks: rpm_yum.yml
+- name: 'initial debian distribution specific block'
+  block:
+    - name: 'typically debian method'
+      command: update-ca-certificates
+      when: cert_map.changed
+    - name: 'package manager related tasks'
+      include_tasks: "apt.yml"
+  when: ansible_os_family == 'Debian' or ansible_os_family == 'Suse'
+  
 - name: 'upgrade all packages, asynchronously'
-  yum:
+  package:
     name: '*'
     state: latest
-    exclude: "{{ yum_upgrade_exclude |default('') }}"
   async: 600
-  register: yum_upgrade
+  register: package_upgrade
   poll: 0
-- name: 'systemd-networkd allows for many more features and control than regular init style network scripts'
-  template:
-    src: networkd-external.network
-    dest: /etc/systemd/network/
-    owner: root
-    group: root
-    mode: '0644'
-    setype: etc_t
-- name: 'systemd-networkd allows for many more features and control than regular init style network scripts'
-  template:
-    src: networkd-internal.network
-    dest: /etc/systemd/network/
-    owner: root
-    group: root
-    mode: '0644'
-    setype: etc_t
-- name: 'core sudoers file'
-  template:
-    src: sudoers.j2
-    dest: /etc/sudoers
-    owner: root
-    group: root
-    mode: '0600'
-    validate: '/usr/sbin/visudo -cf %s'
-    backup: yes
-- name: 'chrony, NTP time config'
-  template:
-    src: chrony.conf.j2
-    dest: /etc/chrony.conf
-    owner: root
-    group: root
-    mode: '0600'
+- name: networkd work
+  block:
+    - name: create networkd directory
+      file:
+        state: directory
+        path: /etc/systemd/network
+        setype: etc_t
+        owner: root
+        group: root
+      when: addresses is defined and addresses |length >= 1
+      register: networkd
+      
+    - name: 'systemd-networkd allows for many more features and control than regular init style network scripts'
+      template:
+        src: networkd-primary-interface.network
+        dest: /etc/systemd/network/interface-{{ iface.key }}.network
+        owner: root
+        group: root
+        mode: '0644'
+        setype: etc_t
+      when: networkd is success
+      register: primary_networkd
+      loop: "{{ addresses |dict2items }}"
+      loop_control: 
+        loop_var: iface
+      
+    - name: 'enable networkd manual handler'
+      systemd:
+        name: systemd-networkd
+        state: restarted
+        enabled: yes
+      when: primary_networkd.changed
+  when: '"systemd-networkd" in common_packages.install'
+
 - name: static hosts entries
   block:
-  - name: 'hosts, for localnet domain'
-    template:
-      src: etc_hosts.j2
-      dest: /etc/hosts
-      owner: root
-      group: root
-      mode: '0644'
-  - name: 'ethers, reduces arp traffic'
-    template:
-      src: ethers.j2
-      dest: /etc/ethers
-      owner: root
-      group: root
-      mode: '0644'
-    when: net_hosts[0].interfaces[0].hwaddr is defined
-  - name: 'ethers service, seed arp tables from file'
-    systemd:
-      name: arp-ethers.service
-      enabled: yes
-      no_block: yes
-      state: started
-    when: net_hosts[0].interfaces[0].hwaddr is defined
+    - name: 'hosts, for localnet domain'
+      template:
+        src: etc_hosts.j2
+        dest: /etc/hosts
+        owner: root
+        group: root
+        mode: '0644'
+        setype: etc_t #new: net_conf_t
+      when: net_hosts | selectattr('tags','match','include')
+      
+    - name: 'ethers, reduces arp traffic'
+      template:
+        src: ethers.j2
+        dest: /etc/ethers
+        owner: root
+        group: root
+        setype: etc_t #new: net_conf_t
+        mode: '0644'
+      register: arp_file
+      
+    - name: 'copy ethers service, not present on ubuntu' 
+      template:
+        src: arp-ethers.service
+        dest: /etc/systemd/system/
+        owner: root
+        group: root
+        mode: '0644'
+      when: ansible_os_family == 'Debian' and arp_file.changed or ( "net-tools" not in common_packages.install and "net-tools" not in dnf_packages.install )
+      
+    - name: 'ethers service, seed arp tables from file'
+      systemd:
+        name: arp-ethers.service
+        enabled: yes
+        no_block: yes
+        state: restarted
+      when: arp_file.changed
   when: net_hosts is defined
+  
 - name: skel create .ssh, for new accounts
   file:
     owner: root
@@ -99,6 +133,7 @@
     path: /etc/skel/.ssh/config.d
     mode: 0700
     state: directory
+    
 - name: skel create .ssh, for new accounts
   file:
     owner: root
@@ -106,6 +141,7 @@
     path: /etc/skel/.ssh
     mode: 0700
     state: directory
+    
 - name: skel create authorized keys file, for new accounts
   file:
     owner: root
@@ -113,6 +149,7 @@
     path: /etc/skel/.ssh/authorized_keys
     mode: 0600
     state: touch
+    
 - name: skel create basic .vimrc, for new accounts
   copy:
     owner: root
@@ -125,6 +162,16 @@
       set nocompatible
       syntax enable
       colorscheme desert
+      
+- name: 'banner'
+  copy:
+    owner: root
+    group: root
+    mode: 0644
+    dest: /etc/banner
+    content: |
+      {{ banner | default('welcome') }}
+      
 - name: change default history
   lineinfile:
     path: /etc/profile
@@ -133,68 +180,109 @@
     owner: root
     group: root
     mode: '0644'
+    
 - name: 'public ssh CA key'
   copy:
     src: "{{ sshd_ca_pub }}"
     dest: "/etc/ssh/sshd_ca.pub"
-    mode: 0400
+    mode: 0444
     owner: root
     group: root
     setype: sshd_key_t
   when: sshd_certificates is defined
+
 - name: 'sshd config'
   template:
-    src: sshd.conf.j2
+    src: sshd.conf
     dest: /etc/ssh/sshd.conf
     owner: root
     group: root
     mode: '0600'
     setype: etc_t
+  register: sshd_conf
     #https://github.com/ansible/ansible/issues/19243
     #validate: "/usr/sbin/sshd -c -T %s"
-- name: activate sshd
+- name: activate sshd, same as handler
   systemd:
     name: sshd
     enabled: yes
-    state: started
+    state: started #restarted would be nice, but potentially dangerous
+  when: sshd_conf.changed
+
+- name: 'chrony, NTP time config'
+  template:
+    src: chrony.conf
+    dest: /etc/chrony.conf
+    owner: root
+    group: root
+    setype: etc_t
+    mode: '0600'
+  register: chrony_conf
+
+- name: 'chrony service' 
+  systemd:
+    name: chronyd
+    state: restarted
+  when: chrony_conf.changed
+  
 - name: 'rsyslog main configuration file'
   template:
-    src: rsyslog.conf.j2
+    src: rsyslog.conf
     dest: /etc/rsyslog.conf
     owner: root
     group: root
     mode: '0644'
     setype: syslog_conf_t
     validate: "rsyslogd -N1 -f %s"
-- name: activate rsyslog
+  register: rsyslog_conf
+  
+- name: activate rsyslog, same as handler
   systemd:
     name: rsyslog
     enabled: yes
     state: restarted
-#- name: 'set selinux context on container dir' 
-  #/var/log/audit(/.*)?                      system_u:object_r:svirt_sandbox_file_t
-- name: 'let sysadm_r (devops) login with ssh'
-  seboolean:
-    name: ssh_sysadm_login
-    state: yes
-    persistent: yes
+  when: rsyslog_conf.changed
+  
+- name: set hostname
+  hostname:
+    name: "{{ hostname | default(ansible_machine_id) }}.{{ domain |default('unset') }}"
+    
+- name: "Set timezone to variable 'timezone'"
+  timezone:
+    name: "{{ timezone | default('UTC') }}"
 
-# Import other NON YUM tasks while the yum upgrade is completing (async)
 - name: import initial user tasks
-  import_tasks: system_user.yml
-- name: remove and revoke users
-  import_tasks: remove_user.yml
-- name: import all clam av tasks
+  import_tasks: users_and_groups.yml
+  
+- name: import all clamav tasks, clamav is a package on fedora, opensuse, ubuntu, gentoo and arch
   import_tasks: clamav.yml
-  when: "'clamav' in centos_packages.install"
+  when: "'clamav' in common_packages.install"
+  
+- name: 'secondary, concurrent to upgrades redhat distribution specific block'
+  block:
+    - name: 'package manager related tasks'
+      import_tasks: "RedHat_family.yml"
+  when: ansible_os_family == 'RedHat' or ansible_os_family == 'Archlinux'
 
-- name: 'wait for yum upgrade to finish'
+- name: 'secondary, concurrent to upgrades redhat distribution specific block'
+  block:
+    - name: 'related tasks'
+      import_tasks: "Debian_family.yml"
+  when: ansible_os_family == 'Debian' and ansible_os_family == 'Suse'
+  
+- name: clean image template 
+  block:
+    - name: clean logs
+      command: "/bin/rm -rf {{ item }}"
+      loop:
+        - "/var/log/*"
+        - "/var/cache/*"
+        - "/root/.cache"
+        - "/root/.bash_history"
+      
+- name: 'wait for package upgrade to finish'
   async_status:
-    jid: "{{ yum_upgrade.ansible_job_id }}"
+    jid: "{{ package_upgrade.ansible_job_id }}"
   register: upgrade_check
   until: upgrade_check.finished
   retries: 90
-- name: relabel
-  command: restorecon -Rv /
-
-# TODO disable firewalld, extra credit SSH CA, /etc/banner

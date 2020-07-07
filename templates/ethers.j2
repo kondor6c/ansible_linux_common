@@ -1,4 +1,5 @@
-{% for entry in net_hosts %}
-# static host entry: {{ entry.interfaces.0.name }} {{ entry.domain }}
-{{ entry.interfaces[0].address }} {{ entry.interfaces.0.hwaddr }}
-{% endfor %}
+{% for entry in net_hosts %}{% for iface in entry.interfaces | selectattr('hwaddr','defined') %}
+# static host entry: {{ iface.name }} {{ entry.domain }}
+
+{{ iface.address }} {{ iface.hwaddr }}
+{% endfor %}{% endfor %}

@@ -1,5 +1,16 @@
 ---
-
+# This tries to detect which services could be restarted. Rather than rebooting a Linux machine usually we can just restart services.
+# That is because of shared objects (dll's), if that doesn't make sense, read about it more. However this attempts to find running
+# services that have been upgraded with dnf/yum and find the systemd unit that the upgraded package owns that is _active_
+# Here is a manual command line that accomplishes the same thing on fedora:
+# rpm -qf $(dnf needs-restarting |awk '/\//{print $3 }' ) |sort |uniq | xargs rpm -ql | grep  -f <(systemctl --type=service --state=active |awk '/service/{print $1}' )
+# and for Centos/RHEL:
+# obtain running programs that have deleted objects (often due to package upgrade):
+# lsof | awk '!/\/tmp\//{if ($10 != \"NAME\") {gsub(\";.*\",\"\",$10) ; print $10} }'|sort|uniq  
+# Next we need to see which packages own those files (command above), I tried to make this cross distro:
+# rpm -qf ${OUTPUT_FILE_LIST_ABOVE} || echo ${OUTPUT_FILE_LIST_ABOVE} | xargs -I{} grep -l -e '{}' /var/lib/dpkg/info/*list 
+# Then we see examine each package, that running confirmed running files, for active systemd units. The two lists are intersected. resulting in units
+# echo ${OUPUT_PACKAGE_NAME_FROM_ABOVE} | xargs rpm -ql | grep -f <(systemctl --type=service --state=active |awk '/service/{print $1}')
 - name: install lsof
   yum:
     name: lsof
@@ -16,7 +27,6 @@
   register: updated_packages
 - name: check for updated services
   block:
-    
     - name: 'check if any packages that were updated are running'
       shell: "lsof -nP +L1 | awk '!/\\/tmp\\//{if ($10 != \"NAME\") {gsub(\";.*\",\"\",$10) ; print $10} }'|sort|uniq"
       become: true
@@ -24,19 +34,23 @@
     - name: 'rpm query for the files'
       command: "rpm -qf {{ item }} "
       register: packages_running_with_deleted_files
+      when: manual_mode
       ignore_errors: yes
       loop: "{{ deleted.stdout_lines }}"
     - name: get service files
-      shell: systemctl --type=service --state=active |awk '/service/{print $1 }'
-      register: running_service_files
+      shell: systemctl --type=service --state=active
+      register: active_service_files
       
+    - name: 'dnf plugin'
+      shell: "dnf needs-restarting |awk '/\\//{print $3 }' | rpm -qf |sort |uniq"
+      register: packages_running_with_deleted_files
     - name: 'query packages for systemd units that could be restarted'
       command: "rpm -ql {{ item.stdout }} "
       register: potentially_restartable
-      loop: "{{ packages_running_with_deleted_files.results }}"
+      loop: "{{ packages_running_with_deleted_files.results.stdout_lines }}"
     - name: intersect running services with files of packages that have open files in (deleted)
       set_fact:
-        deleted: "{{ running_service_files | intersect(package_file.stdout_lines) }}"
+        deleted: "{{ active_service_files | select('match','^service').split(' ')[0] | intersect(package_file.stdout_lines) }}"
       loop: "{{ potentially_restartable.results }}"
       loop_control:
         label: "checking for running service files for intersection of deleted RPM contents {{ package_file }}"

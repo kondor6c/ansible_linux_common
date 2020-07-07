@@ -3,7 +3,8 @@ Description = freshclam scanner
 After = network.target
 [Service]
 Type=simple
-ExecStart=/usr/bin/clamscan --infected --remove --cross-fs=yes  --fdpass --recursive / --exclude-dir=/var/log/
+EnvironmentFile={{ clam_dir }}/clamav_services.env
+ExecStart=/usr/bin/clamscan $CLAM_SCAN_OPTS
 Restart = on-failure
 PrivateTmp = true
 [Install]

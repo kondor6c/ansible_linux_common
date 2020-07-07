@@ -2,11 +2,6 @@
 # tasks file for common Linux machines
 - name: primary
   include_tasks: base.yml
-- name: add users
-  include_tasks: system_user.yml
-- name: display distro
-  debug:
-    msg: "{{ ansible_distribution }}"
 - name: clamAV configure
   include_tasks: clamav.yml
   when: ansible_distribution == 'CentOS' or ansible_distribution != 'RedHat'

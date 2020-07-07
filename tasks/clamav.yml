@@ -1,76 +1,62 @@
 ---
-- name: check if clamav is installed
-  stat:
-    path: /usr/bin/clamav
-  register: clam_bin
-  #- name: install freshclam
-  #  yum:
-  #    name: clamav-update
-  #    state: installed
-  #  when: clam_bin.stat.exists
-  #  tags:
-  #    - build_image
-- name: 'add systemd slice for clam to not consume too much resources and affect applications'
+- name: clamconf
+  command: clamconf
+  register: sysconf
+- name: clamav has the user and directory options set when clamav is compiled, does not seem ideal
+  set_fact:
+    clam_dir: "{{ sysconf.stdout |regex_search('(Checking configuration files in )(\\S+)', '\\2', multiline=True ) |first | default('/etc/') }}"
+    clam_user: "{{ sysconf.stdout |regex_search('(--with-user=)(\\w+)', '\\2', multiline=True) | first  }}"
+    clam_group: "{{ sysconf.stdout |regex_search('(--with-group=)(\\w+)', '\\2', multiline=True ) | first }}"
+- name: set for ubuntu because they are not compiling with a user options
+  set_fact:
+    clam_dir: "/etc/clamav"
+    clam_user: "clamav"
+    clam_group: "clamav"
+  when: ansible_distribution == 'Ubuntu'
+- name: print
+  debug:
+    msg: "{{ clam_dir }} and user {{ clam_user }} {{ clam_group }}"
+- name: move to vars file in new role
+  set_fact:
+    clamav_local_filesystem_autoscan: /srv/scan
+    clam_exclude:
+      - '/var/log'
+    unit_files:
+      - 'clamscan.service'
+      - 'clamscan.slice'
+      - 'clamscan.timer'
+      - 'freshclam.timer'
+      - 'freshclam.service'
+      - 'clamav_autoscan.service'
+      - 'clamav_autoscan.path'
+- name: 'systemd slices (cgroup limits), timers, and service units'
   template:
-    dest: "/etc/systemd/system/clam.slice"
-    src: clam.slice.j2
+    dest: /etc/systemd/system/
+    src: "{{ unit_file }}"
     mode: "0644"
+    setype: etc_t
     owner: "root"
     group: "root"
-  tags:
-    - build_image
-- name: 'add systemd slice for clam to not consume too much resources and affect applications'
-  template:
-    dest: "/etc/systemd/system/clamscan.service"
-    src: clamscan.service.j2
-    mode: "0644"
-    owner: "root"
-    group: "root"
-  tags:
-    - build_image
-    - systemd
-- name: 'freshclam updater'
-  template:
-    dest: "/etc/systemd/system/freshclam.service"
-    src: freshclam.service.j2
-    mode: "0644"
-    owner: "root"
-    group: "root"
-  tags:
-    - build_image
-    - systemd
+  loop: "{{ unit_files }}"
+  loop_control:
+    loop_var: unit_file
 - name: 'clam config'
   template:
-    dest: "/etc/clamd.d/scan.conf"
-    src: clam.d_scan.conf.j2
+    dest: "{{ clam_dir }}/"
+    src: "{{ item }}"
     mode: "0644"
-    owner: "root"
-    group: "root"
-  tags:
-    - build_image
-- name: 'freshclam update timer (replaces cron!)'
-  template:
-    dest: "/etc/systemd/system/freshclam.timer"
-    src: freshclam.timer.j2
-    mode: "0644"
-    owner: "root"
-    group: "root"
-  tags:
-    - build_image
-    - systemd
-- name: 'clam timer (replaces cron!)'
-  template:
-    dest: "/etc/systemd/system/clamscan.timer"
-    src: clamscan.timer.j2
-    mode: "0644"
-    owner: "root"
-    group: "root"
-  tags:
-    - build_image
-    - systemd
-- name: 'freshclam (clamav defination downloader) config'
-  template:
-    dest: "/etc/clamd.d/freshclam.conf"
-    src: freshclam.conf.j2
-    mode: "0644"
-    owner: "root"
+    setype: etc_t
+    owner: "{{ clam_user }}"
+    group: "{{ clam_group }}"
+  loop:
+    - "freshclam.conf"
+    - "scan.conf"
+    - "clamav_services.env"
+
+- name: 'enable clam services'
+  systemd:
+    name: "{{ unit_file }}"
+    enabled: yes
+  loop: "{{ unit_files }}"
+  loop_control:
+    loop_var: unit_file
