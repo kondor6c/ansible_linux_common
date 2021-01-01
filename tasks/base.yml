@@ -340,9 +340,10 @@
 - name: import initial user tasks
   import_tasks: users_and_groups.yml
 
-- name: import all clamav tasks, clamav is a package on fedora, opensuse, ubuntu, gentoo and arch
-  import_tasks: clamav.yml
-  when: "'clamav' in common_packages.install"
+    # Remove
+    #- name: import all clamav tasks, clamav is a package on fedora, opensuse, ubuntu, gentoo and arch
+    #  import_tasks: clamav.yml
+    #  when: "'clamav' in common_packages.install"
 
 - name: 'secondary, concurrent to upgrades redhat distribution specific block'
   block:

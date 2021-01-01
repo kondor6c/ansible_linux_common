@@ -1,3 +1,4 @@
+# TODO, this will help allow adding local users on a central server, this might only be needed when operators don't have Individual Linux machines to work on
 - name: skel create ssh config for our domain customizations, for new accounts
   copy:
     owner: root
