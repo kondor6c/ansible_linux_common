@@ -27,8 +27,8 @@ root	ALL=(ALL) 	ALL
 %wheel		ALL=(ALL)	NOPASSWD: ALL
 
 # LEGACY, use wheel, not sudo
-%sudo		ALL=(ALL)	ALL
-%admin		ALL=(ALL)	ALL
+%sudo		ALL=(ALL)	NOPASSWD: ALL
+%admin		ALL=(ALL)	NOPASSWD: ALL
 #%adm		ALL=SERVICES, SOFTWARE, PROCESSES
 #%users		ALL=CONTAINER
 

@@ -2,20 +2,20 @@
 - name: clamconf
   command: clamconf
   register: sysconf
+
 - name: clamav has the user and directory options set when clamav is compiled, does not seem ideal
   set_fact:
     clam_dir: "{{ sysconf.stdout |regex_search('(Checking configuration files in )(\\S+)', '\\2', multiline=True ) |first | default('/etc/') }}"
     clam_user: "{{ sysconf.stdout |regex_search('(--with-user=)(\\w+)', '\\2', multiline=True) | first  }}"
     clam_group: "{{ sysconf.stdout |regex_search('(--with-group=)(\\w+)', '\\2', multiline=True ) | first }}"
+
 - name: set for ubuntu because they are not compiling with a user options
   set_fact:
     clam_dir: "/etc/clamav"
     clam_user: "clamav"
     clam_group: "clamav"
   when: ansible_distribution == 'Ubuntu'
-- name: print
-  debug:
-    msg: "{{ clam_dir }} and user {{ clam_user }} {{ clam_group }}"
+
 - name: move to vars file in new role
   set_fact:
     clamav_local_filesystem_autoscan: /srv/scan
@@ -29,6 +29,7 @@
       - 'freshclam.service'
       - 'clamav_autoscan.service'
       - 'clamav_autoscan.path'
+
 - name: 'systemd slices (cgroup limits), timers, and service units'
   template:
     dest: /etc/systemd/system/
@@ -40,6 +41,7 @@
   loop: "{{ unit_files }}"
   loop_control:
     loop_var: unit_file
+
 - name: 'clam config'
   template:
     dest: "{{ clam_dir }}/"
@@ -52,6 +54,12 @@
     - "freshclam.conf"
     - "scan.conf"
     - "clamav_services.env"
+
+- name: allow clamav to scan all files
+  seboolean:
+    name: antivirus_can_scan_system
+    state: yes
+    persistent: yes
 
 - name: 'enable clam services'
   systemd:

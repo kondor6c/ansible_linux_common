@@ -45,6 +45,10 @@ apt_packages:
     #- wireless-regdb
 ntp_servers:
   - time.nist.gov
+harden: false
+# prepath is for bootstrapping chroot'ed systems
+prepath: ''
+rsyslog_journald: false
 package_proxy: _none_ #example: http://user@pass:proxy.localnet:3128
 http_proxy: _none_
 https_proxy: proxy.localnet
@@ -59,7 +63,8 @@ groups:
     gid: 2222
     status: present
     sudo: "ALL=(ALL)	NOPASSWD: ALL"
-
+udev:
+  - 'ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0624", ATTR{idProduct}=="0013", ATTR{product}=="SC Secure KVM", TEST=="power/control", ATTR{power/control}:="on"'
 user_message: |
             Right now the gpg key is unprotected, you can change that by changing the key's password by using `gpg2 --edit-key {{ user.gpg_id }} < passwd` then save
 trusted_ca_map:
@@ -144,40 +149,15 @@ trusted_ca_map:
     ATnMnr5ExvcWkZBtCgQa2NvSKrcQnlaqo9icEF4XevI/VTezlb1LjYMWHVd5R6C2
     p4wTyVBIM8hjrLcKiChF43GRJtne7w==
     -----END CERTIFICATE-----
-net_hosts:
-  - interfaces:
-      - hwaddr: 10:1f:74:3d:12:ef
-        address: 10.1.1.69
-        name: foo
-      - hwaddr: aa:bb:cc:dd:ee:ff
-        address: 10.1.1.69
-        name: foo
-    domain: localnet
-    group: example_host
-    services: 
-      - ssh
-    tags:
-      - multi_interface_bond_br
-  - interfaces:
-      - address: 10.1.2.1
-        hwaddr: 11:22:33:44:55:66
-        name: server
-    domain: localnet
-    tags:
-      - regular_machine
-  - interfaces:
-      - address: 127.0.0.1
-        name: pixel
-    domain: rubiconproject.com
-    tags:
-      - example_of_etc_hosts_workaround
-exclude_criteria: 
-addresses: 
+
+devops_ver: "2"
+exclude_criteria:
+addresses:
   primary:
     - '10.1.1.1/24'
     - 'fe80::fc54:ff:fecb:61ea/64'
 #externalv4: "10.1.1.1/24" # ip address, could have cidr embedded
-dns_server: 
+dns_server:
   - dhcp
 disk:
   - name: lv_vg
@@ -200,7 +180,7 @@ disk:
     mount: /data
     devices:
       - vdd
-  
+
 trusted_ca_file_list:
   - ca-rds-ca-2019-root.pem
 rpm_gpg_keys:

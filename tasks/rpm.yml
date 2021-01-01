@@ -1,63 +1,88 @@
 ---
-- name: all yum repos as yaml
-  set_fact:
-    yum_repos: "{{ default_yum_repos |flatten(levels=1)| selectattr('tags', 'search', pkg_criteria) | rejectattr('tags','contains',exclude_criteria ) |list  }}"
-  when: yum_repos is not defined and pkg_criteria is defined
-- name: 'GPG file actions'
+- name: 'ensure prepath and dnf config dir exist'
+  file:
+    state: directory
+    owner: root
+    group: root
+    path: "{{ prepath | default('') }}/etc/dnf/"
+    mode: 0755
+    setype: system_conf_t
+  tags:
+    - 'chroot'
+- name: 'custom dnf config, yum proxy'
+  template:
+    dest: "{{ prepath |default('') }}{{ yum_conf | default('/etc/dnf/') }}"
+    src: dnf.conf
+    setype: etc_t
+    mode: 0644
+    owner: root
+    group: root
+  when: ansible_pkg_mgr == "dnf"
+  tags:
+    - 'chroot'
+
+- name: 'custom yum config, yum proxy. With the above, I could remove this centos7 work around AND bring in support for building chroots'
+  template:
+    dest: /etc/yum.conf
+    src: dnf.conf
+    mode: 0644
+    owner: root
+    group: root
+  when: ansible_pkg_mgr == "yum"
+
+- name: 'yum repo block'
   block:
+    - name: all yum repos as yaml
+      set_fact:
+        yum_repos: "{{ default_yum_repos | flatten(levels=1) |
+          selectattr('tags', 'search', pkg_criteria) |
+          rejectattr('tags','contains',exclude_criteria ) |list  }}"
+      when: yum_repos is not defined and pkg_criteria is defined
+      tags:
+        - 'chroot'
+
+    - name: check GPG file
+      stat:
+        path: "{{ rpm_key }}"
+      register: rpm_gpg
+      when: rpm_key.startswith('/')
+      loop: "{{ rpm_gpg_keys | intersect(yum_repos | select('match','gpg_key') | regex_replace('file:///','')
+            | regex_replace('\\$releasever', ansible_distribution_version ) | regex_replace('\\$basearch',ansible_architecture) |list) }}"
+      loop_control:
+        loop_var: rpm_key
+
+    - name: 'ensure prepath and rpm keys exist'
+      file:
+        state: directory
+        owner: root
+        group: root
+        path: "{{ prepath | default('') }}/etc/pki/rpm-gpg/"
+        mode: 0755
+        setype: system_conf_t
+      tags:
+        - 'chroot'
+
     - name: 'transfer GPG keys to directory'
       copy:
         src: "{{ item }}"
-        dest: "/etc/pki/rpm-gpg/{{ item }}"
+        dest: "{{ prepath | default('') }}/etc/pki/rpm-gpg/{{ item }}"
         mode: 0444
         owner: root
         group: root
         setype: cert_t
-      loop: "{{ rpm_gpg_keys | intersect(yum_repos | select('match','gpg_key') | regex_replace('file:///etc/pki/rpm-gpg/','') |list) }}"
+      loop: "{{ rpm_gpg.results }}"
+      when: not rpm_key.stat.exists
       register: rpm_keys
-    - name: 'trust RPM GPG key, preview-interface'
+      tags:
+        - 'chroot'
+
+    - name: 'trust RPM GPG key'
       rpm_key:
         state: present
-        key: "/etc/pki/rpm-gpg/{{ item }}"
+        key: "{{ item | regex_replace('file:///','') | regex_replace('\\$releasever', ansible_distribution_version ) | regex_replace('\\$basearch',ansible_architecture) }}"
       loop: "{{ rpm_gpg_keys }}"
       when: rpm_keys.changed
-# stats
-- name: 'check for an entitlement, helps to determine if RHEL or CentOS'
-  stat:
-    path: /etc/pki/entitlement
-  register: entitlement
-- name: 'check for /etc/dnf, sometimes fedora, sometimes centos or rhel'
-  stat:
-    path: /etc/dnf
-  register: dnf_dir
 
-- name: 'custom dnf config, yum proxy'
-  template:
-    dest: /etc/dnf/
-    src: dnf.conf
-    mode: "0644"
-    owner: "root"
-    group: "root"
-  when: dnf_dir.stat.isfile is defined
-- name: 'custom yum config, yum proxy'
-  template:
-    dest: "/etc/yum.conf"
-    src: dnf.conf.j2
-    mode: "0644"
-    owner: "root"
-    group: "root"
-  when: dnf_dir.stat.exists == False 
-- name: 'yum repo block'
-  block:
-    - name: 'move certificates to trust directory'
-      copy:
-        src: "{{ item }}"
-        dest: "/etc/pki/rpm-gpg/{{ item }}"
-        mode: 0444
-        owner: root
-        group: root
-        setype: cert_t
-      loop: "{{ rpm_gpg_keys }}"
  ## Begin Approach 1
  #  - name: 'get list of existing repository files'
  #    find:
@@ -87,53 +112,83 @@
         loop_var: yum_pkg
   # End approach 2
   # Common across approaches
-    - name: set repo files list, this replaces complicated subelements into one set fact
+    - name: set repo files list, this replaces complicated subelements into one set fact. Unable to make long line into multiline
       set_fact:
-        repo_list: "{% set rlist = [] %}{% for element in stock_repos.results %}{% for i in element.stdout_lines | select('match','.*repo$') %}{% set _ = rlist.append(i) %}{% endfor %}{% endfor %}{{ rlist | list }}"
-    - name: check file
+        repo_list: "{% set rlist = [] %}{% for element in stock_repos.results -%}{% for i in element.stdout_lines | select('match','.*repo$') -%}{% set _ = rlist.append(i) %}{% endfor %}{% endfor %}{{ rlist | list }}"
+
+    - name: check file, deprecate since we have create at lineinfile
       stat:
         path: "{{ file_path }}"
       loop: "{{ repo_list }}"
       register: yum_repo_file_check
       loop_control:
         loop_var: file_path
-    - name: 'touch if file was not there'
+
+    - name: 'touch if file was not there, deprecate since we have create at lineinfile'
       file:
         path: "{{ files.file_path }}"
-        state: touch
+        state: absent
         owner: root
         group: root
         setype: etc_t
-      when: files.stat.exists == False
+      when: files.stat.exists
       loop: "{{ yum_repo_file_check.results }}"
       loop_control:
         loop_var: files
-    - name: 'disable stock repositories'
-      lineinfile:
-        path: "{{ file.file_path }}"
-        state: present
-        regexp: '^enabled='
-        line: 'enabled=0'
-      when: file.stat.exists == True
-      loop: "{{ yum_repo_file_check.results }}"
-      loop_control:
-        loop_var: file
-        label: "disabling release repository file: {{ file }}"
+
+        #    - name: 'disable stock repositories, potentially unIdempotent, since repositories put down by us, could have the same file name'
+        #      lineinfile:
+        #        path: "{{ file.file_path }}"
+        #        state: present
+        #        create: yes
+        #        regexp: '^*'
+        #        line: '#enabled=0'
+        #      when: file.stat.exists
+        #      loop: "{{ yum_repo_file_check.results }}"
+        #      loop_control:
+        #        loop_var: file
+        #        label: "disabling release repository file: {{ file.file_path }}"
+
+    - name: 'ensure prepath and dnf config dir exist'
+      file:
+        state: directory
+        owner: root
+        group: root
+        path: "{{ prepath | default('') }}/etc/yum.repos.d/"
+        mode: 0755
+        setype: system_conf_t
+      tags:
+        - 'chroot'
+
     - name: 'install custom repositories'
       template:
-        dest: "/etc/yum.repos.d/{{ item.title }}.repo"
+        dest: "{{ prepath | default('') }}/etc/yum.repos.d/{{ item.title }}.repo"
         src: repo.ini
-        mode: "0644"
-        owner: "root"
-        group: "root"
+        mode: 0644
+        owner: root
+        group: root
         setype: system_conf_t
-      when: yum_repos | length > 1
+      when: yum_repos | length >= 1
       loop: "{{ yum_repos |flatten(levels=1) }}"
-  when: not entitlement.stat.exists
+      tags:
+        - 'chroot'
+  when: yum_repos is defined or pkg_criteria is defined
+
 - name: 'install packages that might fail, due to different names'
   yum:
     name: "{{ common_packages.install + dnf_packages.install }}"
     state: present
+    installroot: "{{ prepath }}"
+  when: prepath |length >= 1
+  tags:
+    - 'chroot'
+- name: 'install packages that might fail, due to different names'
+  yum:
+    name: "{{ common_packages.install + dnf_packages.install }}"
+    state: present
+  tags:
+    - 'chroot'
+
 - name: 'remove packages that a default installs and we totally do not need'
   yum:
     name: "{{ common_packages.absent + dnf_packages.absent }}"
