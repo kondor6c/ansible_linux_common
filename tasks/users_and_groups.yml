@@ -1,33 +1,23 @@
 ---
 #- template:
-#    dest: "/etc/sudoers.d/{{ g }}"
-#    src:
-#    state: present
+#    dest: "/etc/sudoers.d/{{ g.name }}"
+#    src: sudoers.d.j2
 #    mode: '0400'
 #    owner: 'root'
 #    group: 'root'
 #    validate: '/usr/sbin/visudo -cf %s'
-#  loop: "{{ groups }}"
+#  loop: "{{ user_groups }}"
 #  loop_control:
 #    loop_var: g
-- name: 'core sudoers file'
-  template:
-    src: sudoers.j2
-    dest: /etc/sudoers
-    owner: root
-    group: root
-    mode: '0600'
-    validate: '/usr/sbin/visudo -cf %s'
-    backup: yes
 - name: check for user structure and enforce it, we still check individual variables to speed execution times
-  assert: 
+  assert:
     that:
       - user_map is defined and user_map | length >= 1 
       - user_groups is defined
       - revoked_users is defined
-    fail_msg: "user/group variable structure is not present, it should be, if users are to be added."
+    fail_msg: "user/group variable structure is not correct: user_map={name,uid,primary_group}, revoked_users={key=action}, user_groups={name,gid,sudo}"
     success_msg: "adding users present in user_map"
-    
+
 - name: 'modify group membership'
   group:
     name: "{{ g.name }}"
@@ -47,6 +37,7 @@
         uid: "{{ u.uid }}"
         comment: "{{ u.comment | default('no comment') }}"
         state: present
+        home: "{{ u.home_dir | default('/home/' + u.name ) }}"
         groups: "{{ u.primary_group }}"
       loop: "{{ user_map }}"
       when: user_map | length >= 1 
@@ -54,6 +45,7 @@
         loop_var: u
       tags:
         - useradd
+
     - name: 'auth_key module '
       authorized_key:
         user: "{{ u.0.name }}"
@@ -67,12 +59,23 @@
         - authorized_keys
   when: user_map is defined and user_map | length >= 1 
 
+- name: 'core sudoers file'
+  template:
+    src: sudoers.j2
+    dest: /etc/sudoers
+    owner: root
+    group: root
+    mode: '0400'
+    validate: '/usr/sbin/visudo -cf %s'
+    backup: yes
+
 - name: revoke specified users
   block:
     - name: if argument is passed, add it
       set_fact:
         revoked_users: "{{ revoked_user | combine(revoked_user: 'purge') }}"
       when: revoke_user is defined
+
     - name: new kill
       command: "pkill --signal 9 -U {{ u.key }}"
       ignore_errors: true
@@ -80,12 +83,14 @@
       when: u.value != 'soft'
       loop_control:
         loop_var: u
+
     - name: archive user contents
       command: "tar czf userhome_{{ u.key }}_archive.tar.gz /home/{{ u.key }}"
       when: ( users[u.key]['archive_home'] is defined and users[u.key]['archive_home'] |bool == True) or (u.value == 'archive' )
       loop: "{{ revoked_users |dict2items }}"
       loop_control:
         loop_var: u
+
     - name: remove user
       user:
         name: "{{ u.key }}"

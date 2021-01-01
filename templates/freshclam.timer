@@ -1,9 +1,0 @@
-[Unit]
-Description=update clamav definition
-Wants=freshclam.service
-
-[Timer]
-OnCalendar={{ clamav_update_schedule | default('*-*-* 08:00:00') }}
-
-[Install]
-WantedBy=timers.target

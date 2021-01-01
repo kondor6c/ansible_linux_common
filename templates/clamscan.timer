@@ -1,9 +1,0 @@
-[Unit]
-Description=update clamav definition
-Wants=clamscan.service
-
-[Timer]
-OnCalendar=*-*-* 08:00:00
-
-[Install]
-WantedBy=timers.target

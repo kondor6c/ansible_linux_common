@@ -1,3 +1,4 @@
+# Simple networkd config put down by linux_common
 [Match]
 {% if 'primary' in iface.key or ( iface.key | list |intersect(ansible_interfaces) | length >= 1 ) %}
 Name={{ iface.key.replace('primary', ansible_default_ipv4.alias) }}

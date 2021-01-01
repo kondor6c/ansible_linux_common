@@ -6,11 +6,49 @@
     patterns: 'scan'
     recurse: yes
   register: scsi_list
+ 
 - name: Rescanning your SCSI bus to see new storage
   shell: "echo '- - -' > {{ item }}"
   loop: '{{ scsi_list.files }}'
-  
-  
+
+- name: 'check file first'
+  stat:
+    path: "{{ swapfile }}"
+  register: file_swap
+
+- name: 'swap file'
+  command: "dd if=/dev/zero of={{ swapfile | default('/mnt/swap') }} bs=1024 count={{ swapsize }}"
+    creates: "{{ swapfile }}"
+  register: zeroed
+
+- name: 'format swapfile'
+  command: "mkswap {{ swapfile }}"
+  when: zeroed.changed
+
+- name: 'activate swap'
+  command: "swapon {{ swapfile }}"
+  when: zeroed.changed
+
+- name: 'systemd swap'
+  copy:
+    dest: "/etc/systemd/system/{{ swapfile |replace('/','-') }}.swap"
+    content: | 
+          [Unit]
+          Description=Turn on swap
+          [Swap]
+          What={{ swapfile }}
+          [Install]
+          WantedBy=multi-user.target
+  register: swap_unit
+
+- name: 'enable systemd swap'
+  systemd:
+    daemon_reload: yes
+    name: "{{ swapfile |replace('/','-') }}.swap"
+    state: started
+    enabled: yes
+  when: swap_unit.changed
+
 - name: 'LVM'
   block:
     - name: 'create volume group'
@@ -24,6 +62,7 @@
       register: lvm
       loop_control:
         loop_var: d
+
     - name: create the filesystem
       filesystem:
         dev: "/dev/{{ d.fs }}"
@@ -34,6 +73,7 @@
       loop_control:
         loop_var: lv
   when: disks | selectattr('fs','match','_lvm')
+
 - name: 'regular file system'
   filesystem:
     dev: "/dev/{{ d.fs }}"
@@ -41,13 +81,13 @@
     resizefs: yes
     opts: "{{ d.fs_opts }}"
   loop: "{{ disks }}"
-  when: not d.fs | search('lvm') 
+  when: not d.fs | search('lvm')
   loop_control:
     loop_var: d
-    
+
 - name: create the filesystem
   filesystem:
-    dev: "/dev/{{ d.fs }}"
+    dev: "/dev/{{ d. }}"
     fstype: "{{ d.fs.split('_')[1] == 'lvm' }}"
     resizefs: yes
     opts: "{{ d.fs_opts }}"
@@ -66,7 +106,7 @@
   register: systemd_mounts
   loop_control:
     loop_var: d
-    
+
 - name: enable mounts
   systemd:
     name: "{{ item }}"

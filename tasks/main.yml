@@ -2,7 +2,4 @@
 # tasks file for common Linux machines
 - name: primary
   include_tasks: base.yml
-- name: clamAV configure
-  include_tasks: clamav.yml
-  when: ansible_distribution == 'CentOS' or ansible_distribution != 'RedHat'
   

@@ -1,8 +1,10 @@
 ---
-- name: set pki location
+- name: set pki location, it seems that the accepted standard is /etc/ssl/, but sometime early on there was a question posed to a mailing list and /etc/pki was born
   set_fact:
-    filesystem_pki: "{% if ansible_os_family == 'RedHat' %}/etc/pki/ca-trust/source/anchors/{% elif ansible_os_family == 'Debian' %}/etc/ssl/certs/{% endif %}"
-    
+    filesystem_pki: "{% if ansible_os_family == 'RedHat' %}{{ prepath }}/etc/pki/ca-trust/source/anchors/{% elif ansible_os_family == 'Debian' %}/etc/ssl/certs/{% endif %}"
+  tags:
+    - 'chroot'
+
 - name: 'import certificates from variable'
   copy:
     content: "{{ item.value }}"
@@ -14,7 +16,9 @@
     validate: "openssl x509 -in %s"
   loop: "{{ trusted_ca_map |  default({}) | dict2items }}"
   register: cert_map
-  
+  tags:
+    - 'chroot'
+
 - name: 'transfer certificates to trust directory'
   copy:
     src: "{{ item }}"
@@ -26,7 +30,9 @@
     validate: "openssl x509 -in %s"
   loop: "{{ trusted_ca_file_list }}"
   when: trusted_ca_file_list is defined
-  
+  tags:
+    - 'chroot'
+
 - name: 'initial redhat distribution specific block'
   block:
     - name: 'typically redhat method'
@@ -34,6 +40,8 @@
       when: cert_map.changed
     - name: 'package manager related tasks'
       include_tasks: "rpm.yml"
+      tags:
+        - 'chroot'
   when: ansible_os_family == 'RedHat' or ansible_os_family == 'Archlinux'
 
 - name: 'initial debian distribution specific block'
@@ -44,7 +52,7 @@
     - name: 'package manager related tasks'
       include_tasks: "apt.yml"
   when: ansible_os_family == 'Debian' or ansible_os_family == 'Suse'
-  
+
 - name: 'upgrade all packages, asynchronously'
   package:
     name: '*'
@@ -52,18 +60,20 @@
   async: 600
   register: package_upgrade
   poll: 0
+
 - name: networkd work
   block:
     - name: create networkd directory
       file:
         state: directory
         path: /etc/systemd/network
+        mode: 0755
         setype: etc_t
         owner: root
         group: root
       when: addresses is defined and addresses |length >= 1
       register: networkd
-      
+
     - name: 'systemd-networkd allows for many more features and control than regular init style network scripts'
       template:
         src: networkd-primary-interface.network
@@ -75,9 +85,9 @@
       when: networkd is success
       register: primary_networkd
       loop: "{{ addresses |dict2items }}"
-      loop_control: 
+      loop_control:
         loop_var: iface
-      
+
     - name: 'enable networkd manual handler'
       systemd:
         name: systemd-networkd
@@ -97,8 +107,8 @@
         mode: '0644'
         setype: etc_t #new: net_conf_t
       when: net_hosts | selectattr('tags','match','include')
-      
-    - name: 'ethers, reduces arp traffic'
+
+    - name: 'ethers, reduces arp traffic. This will only be added for hosts that have hwaddr in their dict'
       template:
         src: ethers.j2
         dest: /etc/ethers
@@ -106,9 +116,10 @@
         group: root
         setype: etc_t #new: net_conf_t
         mode: '0644'
+      when: net_hosts | selectattr('hwaddr','defined')
       register: arp_file
-      
-    - name: 'copy ethers service, not present on ubuntu' 
+
+    - name: 'copy ethers service, not present on ubuntu'
       template:
         src: arp-ethers.service
         dest: /etc/systemd/system/
@@ -116,7 +127,7 @@
         group: root
         mode: '0644'
       when: ansible_os_family == 'Debian' and arp_file.changed or ( "net-tools" not in common_packages.install and "net-tools" not in dnf_packages.install )
-      
+
     - name: 'ethers service, seed arp tables from file'
       systemd:
         name: arp-ethers.service
@@ -124,24 +135,36 @@
         no_block: yes
         state: restarted
       when: arp_file.changed
+    - name: set hostname from net hosts based on MAC address
+      hostname:
+        name: "{{ net_hosts |selectattr('interfaces',) }}.{{ domain |default('unset') }}"
+      register: net_hosts_hostname
+      when: net_hosts | selectattr('hwaddr','match',ansible_default_ipv4.macaddress)
+
+    - name: set preserve on hostname because we just set it above
+      set_fact:
+        hostname: '_preserve_'
+      when: net_hosts_hostname.changed
   when: net_hosts is defined
-  
+
 - name: skel create .ssh, for new accounts
   file:
     owner: root
     group: root
     path: /etc/skel/.ssh/config.d
+    setype: etc_t
     mode: 0700
     state: directory
-    
+
 - name: skel create .ssh, for new accounts
   file:
     owner: root
     group: root
     path: /etc/skel/.ssh
+    setype: etc_t
     mode: 0700
     state: directory
-    
+
 - name: skel create authorized keys file, for new accounts
   file:
     owner: root
@@ -149,29 +172,41 @@
     path: /etc/skel/.ssh/authorized_keys
     mode: 0600
     state: touch
-    
+
 - name: skel create basic .vimrc, for new accounts
   copy:
     owner: root
     group: root
     mode: 0644
     dest: /etc/skel/.vimrc
+    setype: etc_t
     content: |
       set ruler
       set number
       set nocompatible
       syntax enable
       colorscheme desert
-      
+
 - name: 'banner'
   copy:
     owner: root
     group: root
     mode: 0644
     dest: /etc/banner
+    setype: etc_t
     content: |
       {{ banner | default('welcome') }}
-      
+
+- name: 'remote users banner issue'
+  copy:
+    owner: root
+    group: root
+    mode: 0644
+    dest: /etc/issue
+    setype: etc_t
+    content: |
+      {{ banner | default(" ip: \4  automation_version: " + devops_ver ) }}
+
 - name: change default history
   lineinfile:
     path: /etc/profile
@@ -180,7 +215,7 @@
     owner: root
     group: root
     mode: '0644'
-    
+
 - name: 'public ssh CA key'
   copy:
     src: "{{ sshd_ca_pub }}"
@@ -191,10 +226,57 @@
     setype: sshd_key_t
   when: sshd_certificates is defined
 
+- name: 'journald config'
+  template:
+    src: journald.conf
+    dest: /etc/systemd/
+    owner: root
+    group: root
+    mode: '0644'
+    setype: etc_t
+
+- name: 'logind config'
+  template:
+    src: logind.conf
+    dest: /etc/systemd/
+    owner: root
+    group: root
+    mode: '0644'
+    setype: etc_t
+
+- name: 'systemd config'
+  template:
+    src: system.conf
+    dest: /etc/systemd/
+    owner: root
+    group: root
+    mode: '0644'
+    setype: etc_t
+
+- name: disable cloud init for now
+  file:
+    owner: root
+    group: root
+    path: "/etc/cloud/cloud-init.disabled"
+    mode: 0755
+    setype: tuned_etc_t
+    state: directory
+  when: tuned_profile is defined
+
+- name: create a custom tuned profile
+  file:
+    owner: root
+    group: root
+    path: "/etc/tuned/{{ tuned_profile |default('custom') }}"
+    mode: 0755
+    setype: tuned_etc_t
+    state: directory
+  when: tuned_profile is defined
+
 - name: 'sshd config'
   template:
     src: sshd.conf
-    dest: /etc/ssh/sshd.conf
+    dest: /etc/ssh/
     owner: root
     group: root
     mode: '0600'
@@ -202,6 +284,7 @@
   register: sshd_conf
     #https://github.com/ansible/ansible/issues/19243
     #validate: "/usr/sbin/sshd -c -T %s"
+
 - name: activate sshd, same as handler
   systemd:
     name: sshd
@@ -219,45 +302,49 @@
     mode: '0600'
   register: chrony_conf
 
-- name: 'chrony service' 
+- name: 'chrony service'
   systemd:
     name: chronyd
+    enabled: yes
     state: restarted
   when: chrony_conf.changed
-  
+
 - name: 'rsyslog main configuration file'
   template:
     src: rsyslog.conf
-    dest: /etc/rsyslog.conf
+    dest: /etc/
     owner: root
     group: root
     mode: '0644'
     setype: syslog_conf_t
     validate: "rsyslogd -N1 -f %s"
   register: rsyslog_conf
-  
+
 - name: activate rsyslog, same as handler
   systemd:
     name: rsyslog
     enabled: yes
     state: restarted
   when: rsyslog_conf.changed
-  
+
 - name: set hostname
   hostname:
     name: "{{ hostname | default(ansible_machine_id) }}.{{ domain |default('unset') }}"
-    
+  when: hostname is not defined or hostname != "_preserve_"
+
 - name: "Set timezone to variable 'timezone'"
   timezone:
     name: "{{ timezone | default('UTC') }}"
+  when: timezone is not defined or timezone != "_preserve_"
 
 - name: import initial user tasks
   import_tasks: users_and_groups.yml
-  
-- name: import all clamav tasks, clamav is a package on fedora, opensuse, ubuntu, gentoo and arch
-  import_tasks: clamav.yml
-  when: "'clamav' in common_packages.install"
-  
+
+    # Remove
+    #- name: import all clamav tasks, clamav is a package on fedora, opensuse, ubuntu, gentoo and arch
+    #  import_tasks: clamav.yml
+    #  when: "'clamav' in common_packages.install"
+
 - name: 'secondary, concurrent to upgrades redhat distribution specific block'
   block:
     - name: 'package manager related tasks'
@@ -269,7 +356,7 @@
     - name: 'related tasks'
       import_tasks: "Debian_family.yml"
   when: ansible_os_family == 'Debian' and ansible_os_family == 'Suse'
-  
+
 - name: clean image template 
   block:
     - name: clean logs
@@ -279,7 +366,8 @@
         - "/var/cache/*"
         - "/root/.cache"
         - "/root/.bash_history"
-      
+  when: clean_files is defined
+
 - name: 'wait for package upgrade to finish'
   async_status:
     jid: "{{ package_upgrade.ansible_job_id }}"
