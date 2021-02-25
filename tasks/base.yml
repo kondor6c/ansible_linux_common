@@ -1,4 +1,5 @@
 ---
+##### BEGIN Certificates and PKI #####
 - name: set pki location, it seems that the accepted standard is /etc/ssl/, but sometime early on there was a question posed to a mailing list and /etc/pki was born
   set_fact:
     filesystem_pki: "{% if ansible_os_family == 'RedHat' %}{{ prepath }}/etc/pki/ca-trust/source/anchors/{% elif ansible_os_family == 'Debian' %}/etc/ssl/certs/{% endif %}"
@@ -33,6 +34,8 @@
   tags:
     - 'chroot'
 
+##### END Certificates and PKI #####
+##### BEGIN OS Packaging and Repositories #####
 - name: 'initial redhat distribution specific block'
   block:
     - name: 'typically redhat method'
@@ -40,6 +43,7 @@
       when: cert_map.changed
     - name: 'package manager related tasks'
       include_tasks: "rpm.yml"
+      when: criteria is defined
       tags:
         - 'chroot'
   when: ansible_os_family == 'RedHat' or ansible_os_family == 'Archlinux'
@@ -53,6 +57,7 @@
       include_tasks: "apt.yml"
   when: ansible_os_family == 'Debian' or ansible_os_family == 'Suse'
 
+##### END OS Packaging and Repositories #####
 - name: 'upgrade all packages, asynchronously'
   package:
     name: '*'
@@ -60,7 +65,9 @@
   async: 600
   register: package_upgrade
   poll: 0
+  when: pkg_upgrade_all
 
+##### BEGIN Network configuration: Networkd #####
 - name: networkd work
   block:
     - name: create networkd directory
@@ -73,11 +80,16 @@
         group: root
       when: addresses is defined and addresses |length >= 1
       register: networkd
-
+    - name: 'systemd-networkd allows for many more features and control than regular init style network scripts'
+      debug:
+        msg: "/etc/systemd/network/interface-{{ iface.key }}.network"
+      loop: "{{ addresses |dict2items }}"
+      loop_control:
+        loop_var: iface
     - name: 'systemd-networkd allows for many more features and control than regular init style network scripts'
       template:
         src: networkd-primary-interface.network
-        dest: /etc/systemd/network/interface-{{ iface.key }}.network
+        dest: "/etc/systemd/network/interface-{{ iface.key }}.network"
         owner: root
         group: root
         mode: '0644'
@@ -94,6 +106,22 @@
         state: restarted
         enabled: yes
       when: primary_networkd.changed
+      
+    - name: 'enable resolved'
+      systemd:
+        name: systemd-resolved
+        state: restarted
+        enabled: yes
+      register: resolved_unit
+      when: resolvers is defined
+      
+    - name: "Set resolv.conf when using resolved"
+      file:
+        src: /run/systemd/resolve/stub-resolv.conf
+        force: yes
+        dest: /etc/resolv.conf
+        state: link
+      when: resolved_unit is success
   when: '"systemd-networkd" in common_packages.install'
 
 - name: static hosts entries
@@ -146,7 +174,23 @@
         hostname: '_preserve_'
       when: net_hosts_hostname.changed
   when: net_hosts is defined
+- name: "Set nameserver"
+  debug:
+    msg: "place holder for modifying dns in /etc/resolv.conf"
+##### END Network configuration: Networkd #####
+##### BEGIN Basic tasks #####
+- name: set hostname
+  hostname:
+    name: "{{ hostname | default(ansible_machine_id) }}.{{ domain |default('unset') }}"
+  when: hostname is not defined or hostname != "_preserve_"
 
+- name: "Set timezone to variable 'timezone'"
+  timezone:
+    name: "{{ timezone | default('UTC') }}"
+  when: timezone is not defined or timezone != "_preserve_"
+ 
+##### END Basic tasks #####
+##### BEGIN Human User configurations #####
 - name: skel create .ssh, for new accounts
   file:
     owner: root
@@ -205,7 +249,7 @@
     dest: /etc/issue
     setype: etc_t
     content: |
-      {{ banner | default(" ip: \4  automation_version: " + devops_ver ) }}
+      {{ banner | default(' ip: \4  automation_version: ' + devops_ver ) }}
 
 - name: change default history
   lineinfile:
@@ -216,16 +260,11 @@
     group: root
     mode: '0644'
 
-- name: 'public ssh CA key'
-  copy:
-    src: "{{ sshd_ca_pub }}"
-    dest: "/etc/ssh/sshd_ca.pub"
-    mode: 0444
-    owner: root
-    group: root
-    setype: sshd_key_t
-  when: sshd_certificates is defined
+- name: import initial user tasks
+  import_tasks: users_and_groups.yml
 
+##### END Human User configurations #####
+##### BEGIN systemd #####
 - name: 'journald config'
   template:
     src: journald.conf
@@ -252,7 +291,8 @@
     group: root
     mode: '0644'
     setype: etc_t
-
+##### END systemd #####
+##### BEGIN other utilities #####
 - name: disable cloud init for now
   file:
     owner: root
@@ -273,6 +313,63 @@
     state: directory
   when: tuned_profile is defined
 
+##### END other utilities #####
+##### BEGIN SSH config #####
+- name: 'openSSH CA'
+  block:
+    - name: 'public SSH CA host certiticate'
+      copy:
+        dest: "/etc/ssh/ssh_host_cert.pub"
+        mode: 0440
+        owner: root
+        group: root
+        setype: sshd_key_t
+        content: "{{ ssh_host_cert_pub }}"
+      register: ssh_host_ca
+      when: ssh_host_cert_pub is defined
+
+    - name: 'SSH CA principles (-n) '
+      file:
+        path: "/etc/ssh/auth_principals"
+        mode: 0440
+        owner: root
+        group: root
+        state: directory
+        setype: sshd_key_t
+      when: sshd_principles is defined
+
+    - name: 'SSH CA revoked keys'
+      file:
+        path: "/etc/ssh/revoked"
+        mode: 0440
+        owner: root
+        group: root
+        state: file
+        setype: sshd_key_t
+
+    - name: 'public SSH User CA'
+      copy:
+        dest: "/etc/ssh/ssh_ca_user.pub"
+        mode: 0440
+        owner: root
+        group: root
+        setype: sshd_key_t
+        content: "{{ ssh_ca_user_pub }}"
+      register: ssh_user_ca
+      when: ssh_ca_user_pub is defined
+
+    - name: 'known hosts, public SSH host CA'
+      copy:
+        dest: "/etc/ssh/known_hosts"
+        mode: 0444
+        owner: root
+        group: root
+        setype: sshd_key_t
+        content: "@cert-authority * {{ ssh_ca_host_pub }}"
+      register: ssh_user_ca
+      when: ssh_ca_host_pub is defined
+  when: sshd_certificates is defined
+
 - name: 'sshd config'
   template:
     src: sshd.conf
@@ -284,13 +381,23 @@
   register: sshd_conf
     #https://github.com/ansible/ansible/issues/19243
     #validate: "/usr/sbin/sshd -c -T %s"
+    
+- name: activate sshd, same as handler
+  systemd:
+    name: sshd
+    enabled: yes
+    state: restarted #restarted would be nice, but potentially dangerous
+  when: sshd_conf.changed or (ssh_host_ca.changed or ssh_user_ca.changed)
+  register: sshd_restarted
 
 - name: activate sshd, same as handler
   systemd:
     name: sshd
     enabled: yes
     state: started #restarted would be nice, but potentially dangerous
-  when: sshd_conf.changed
+  when: sshd_restarted.skipped is defined
+
+##### END SSH config #####
 
 - name: 'chrony, NTP time config'
   template:
@@ -308,7 +415,23 @@
     enabled: yes
     state: restarted
   when: chrony_conf.changed
+ 
+- name: 'secondary, concurrent to upgrades redhat distribution specific block'
+  block:
+    - name: 'package manager related tasks'
+      import_tasks: "RedHat_family.yml"
+  when: ansible_os_family == 'RedHat' or ansible_os_family == 'Archlinux'
 
+- name: 'secondary, concurrent to upgrades redhat distribution specific block'
+  block:
+    - name: 'related tasks'
+      import_tasks: "Debian_family.yml"
+  when: ansible_os_family == 'Debian' and ansible_os_family == 'Suse'
+    # Remove
+    #- name: import all clamav tasks, clamav is a package on fedora, opensuse, ubuntu, gentoo and arch
+    #  import_tasks: clamav.yml
+    #  when: "'clamav' in common_packages.install"
+##### BEGIN Logging #####
 - name: 'rsyslog main configuration file'
   template:
     src: rsyslog.conf
@@ -326,36 +449,9 @@
     enabled: yes
     state: restarted
   when: rsyslog_conf.changed
+# TODO add logrotate, grub, udev, modprobe, sysctl
 
-- name: set hostname
-  hostname:
-    name: "{{ hostname | default(ansible_machine_id) }}.{{ domain |default('unset') }}"
-  when: hostname is not defined or hostname != "_preserve_"
-
-- name: "Set timezone to variable 'timezone'"
-  timezone:
-    name: "{{ timezone | default('UTC') }}"
-  when: timezone is not defined or timezone != "_preserve_"
-
-- name: import initial user tasks
-  import_tasks: users_and_groups.yml
-
-    # Remove
-    #- name: import all clamav tasks, clamav is a package on fedora, opensuse, ubuntu, gentoo and arch
-    #  import_tasks: clamav.yml
-    #  when: "'clamav' in common_packages.install"
-
-- name: 'secondary, concurrent to upgrades redhat distribution specific block'
-  block:
-    - name: 'package manager related tasks'
-      import_tasks: "RedHat_family.yml"
-  when: ansible_os_family == 'RedHat' or ansible_os_family == 'Archlinux'
-
-- name: 'secondary, concurrent to upgrades redhat distribution specific block'
-  block:
-    - name: 'related tasks'
-      import_tasks: "Debian_family.yml"
-  when: ansible_os_family == 'Debian' and ansible_os_family == 'Suse'
+##### END Logging #####
 
 - name: clean image template 
   block:

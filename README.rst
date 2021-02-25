@@ -1,6 +1,6 @@
-############
-Linux Common
-############
+======================================
+Common Linux Automation tasks Concepts
+======================================
 
 Very common automation actions across every system configurations. 
 We set these kinds of parameters on almost every machine we manipulate. Some of these examples include:
@@ -11,7 +11,7 @@ We set these kinds of parameters on almost every machine we manipulate. Some of 
   * NTP
   * users, groups and sudo 
 
-While it could be argued that these could go into roles of their own, this is a jumping off point and if they are simple enough moving them to a different role just to insert an NTP configuration file seems like it might actually complicate things because you'd be looking at a separate role just to find that this role does one simple task.
+While it could be argued that these could go into roles of their own, this is a jumping off point and if they are simple enough moving them to a different role just to insert an NTP configuration file seems like it might actually complicate things because you'd be looking at a separate role just to find that this role does one simple task like adding the configuration file and restarting the service.
 I try to consider this an "incubating" role. Where you can add content, and move it out when you deem neccessary.
 
 Trends and patterns
@@ -24,17 +24,17 @@ Motives
 I wanted to define configuration as variables. Which often meant that complex dictionaries were used and handling them. A missing attribute or modifying a nested value is not easily done in Ansible.
 With that in mind I hesitated greatly on the complexity/difficulty that it brings. I tried very hard to create good safe defaults. For more information on these look at Data Structures 
 
-************
 Requirements
-************
+============
 Ansible >= 2.8
-Fedora or CentOS or RHEL
-Ubuntu
+Fedora
+CentOS or RHEL >= 7
+Ubuntu or Debian
 
 
-**************
+
 Role Variables
-**************
+==============
 Sensible defaults are defined and prevent this role from failing. Even if you run this role on an internal company's systems. This role will work on a standard Linux install, perhaps at your home.
 This is a critical design step, the reasoning was that if this role could setup a system that isn't tied to many dependencies of an enterprise company a new sysadmin/operator might feel more comfortable to
 experiment and maintain/extend the automation instead of fearing breaking something that can only be ran on a corporate system.
@@ -76,15 +76,34 @@ Data Structures
        tags:
          - example_of_etc_hosts_workaround
 
-Dependencies
-------------
-none
 
 Example Playbook
 ----------------
 .. code-block: yaml
    
 
+
+
+TODO
+----
+- generic systemd service unit, and dict that exposes: /path/exec options ...  (one shot kind of thing)
+- systemd generator for cron's
+- basic cloudinit
+- helper scripts to add/output kickstart, shell script, cloudinit
+- chroot 'connection' compatability 
+- write out kickstart script with repos, write out bash heredoc or again utilize cloudinit
+- maintenance: upgrade all packages that will not require reboot. This will go hand in hand with the other service that allows notifying/restarting services that have been upgraded
+
+new features
+------------
+- deb based distributions, split common linux and rpm out
+- user files
+- systemd networkd
+- etc/hosts hacks
+
+Dependencies
+------------
+none
 
 License
 -------
@@ -93,20 +112,3 @@ BSD
 Author Information
 ------------------
 Kevin Faulkner
-
-TODO
-----
-- generic systemd service unit, and dict that exposes: /path/exec options ...  (one shot kind of thing)
-- systemd generator for cron's
-- basic cloudinit
-- chroot 'connection' compatability 
-- write out kickstart script with repos, write out bash heredoc or again utilize cloudinit
-- maintenance: upgrade all packages that will not require reboot. This will go hand in hand with the other service that allows notifying/restarting services that have been upgraded
-
-new features
-############
-- deb based distributions, split common linux and rpm out
-- user files
-- systemd networkd
-- etc/hosts hacks
-

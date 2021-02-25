@@ -1,7 +1,6 @@
 ---
 common_packages:
   install:
-    - clamav
     - aide
     - rng-tools
     - rsyslog-gnutls
@@ -12,9 +11,9 @@ common_packages:
     - ppp
 dnf_packages:
   install:
-    - clamav-update
     - gnutls-utils
     - nss-tools
+    - qemu-guest-agent
   absent:
     - krb5-workstation
     - linux-firmware
@@ -29,6 +28,7 @@ apt_packages:
     - linux-tools-virtual
     - aide-common
     - clamav-daemon
+    - spice-vdagent
   absent:
     - landscape-common
     - snapd
@@ -49,6 +49,7 @@ harden: false
 # prepath is for bootstrapping chroot'ed systems
 prepath: ''
 rsyslog_journald: false
+pkg_upgrade_all: true
 package_proxy: _none_ #example: http://user@pass:proxy.localnet:3128
 http_proxy: _none_
 https_proxy: proxy.localnet
@@ -264,6 +265,20 @@ default_apt_repos:
       - ubuntu
 
 default_yum_repos:
+  - title: elasticsearch-6.x
+    long_name: Elasticsearch repository for 6.x packages
+    mirrors:
+      - protocol: https://
+        host: artifacts.elastic.co
+        path: /packages/6.x/yum
+    gpgcheck: 1
+    gpgkey: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    options:
+      enabled: 1
+      type: rpm-md
+    tags:
+      - elastic
+      - elastic-6
   - title: base
     long_name: "CentOS-$releasever - Base"
     mirrors:

@@ -21,5 +21,6 @@ LLDP=false
 {% for ip in iface.value %}{% if '-' in ip %}
 Address={{ ip.split('-')[0] }}
 Gateway={{ ip.split('-')[1] }}
+DNS={{ resolvers }}
 {% endif %}{% endfor %}
 {% endif %}

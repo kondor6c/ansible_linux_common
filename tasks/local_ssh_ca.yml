@@ -10,9 +10,9 @@
     register: ssh_host_ca_private
   when: ssh_host_ca_private
 
-- name: "generate host key for group: {{ group }} at domain: {{ domain }}"
+- name: "generate host key (to be signed later), No password, for group: {{ group }} at domain: {{ domain }}"
   command: "ssh-keygen -N '' -t ed25519 -f ed25519-host-{{ group }}.{{ domain }}"
-- name: 'sign host key'
+- name: 'Sign host key, generate certificate Identity, signing key create Host cert, priNciple group and domain, Validity 52weeks, previous key file to sign'
   command: "ssh-keygen -s ed25519-host-ca -I autoscaled_host_id -h -n {{ group }}.{{ domain }} -V +52w ed25519-host-{{ group }}.{{ domain }}"
 
 
