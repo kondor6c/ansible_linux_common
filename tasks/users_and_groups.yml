@@ -40,6 +40,7 @@
         home: "{{ u.home_dir | default('/home/' + u.name ) }}"
         groups: "{{ u.primary_group }}"
       loop: "{{ user_map }}"
+      register: users_added
       when: user_map | length >= 1 
       loop_control:
         loop_var: u

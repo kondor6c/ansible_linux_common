@@ -80,12 +80,14 @@
         group: root
       when: addresses is defined and addresses |length >= 1
       register: networkd
+
     - name: 'systemd-networkd allows for many more features and control than regular init style network scripts'
       debug:
         msg: "/etc/systemd/network/interface-{{ iface.key }}.network"
       loop: "{{ addresses |dict2items }}"
       loop_control:
         loop_var: iface
+
     - name: 'systemd-networkd allows for many more features and control than regular init style network scripts'
       template:
         src: networkd-primary-interface.network
@@ -106,7 +108,7 @@
         state: restarted
         enabled: yes
       when: primary_networkd.changed
-      
+
     - name: 'enable resolved'
       systemd:
         name: systemd-resolved
@@ -114,7 +116,7 @@
         enabled: yes
       register: resolved_unit
       when: resolvers is defined
-      
+
     - name: "Set resolv.conf when using resolved"
       file:
         src: /run/systemd/resolve/stub-resolv.conf
@@ -163,6 +165,7 @@
         no_block: yes
         state: restarted
       when: arp_file.changed
+
     - name: set hostname from net hosts based on MAC address
       hostname:
         name: "{{ net_hosts |selectattr('interfaces',) }}.{{ domain |default('unset') }}"
@@ -319,8 +322,19 @@
   block:
     - name: 'public SSH CA host certiticate'
       copy:
-        dest: "/etc/ssh/ssh_host_cert.pub"
-        mode: 0440
+        dest: /etc/ssh/ssh_host_cert.key
+        mode: 0400
+        owner: root
+        group: root
+        setype: sshd_key_t
+        content: |
+          {{ ssh_host_cert_key }}
+      when: ssh_host_cert_key is defined
+
+    - name: 'public SSH CA host certiticate'
+      copy:
+        dest: /etc/ssh/ssh_host_cert.pub
+        mode: 0400
         owner: root
         group: root
         setype: sshd_key_t
@@ -328,10 +342,10 @@
       register: ssh_host_ca
       when: ssh_host_cert_pub is defined
 
-    - name: 'SSH CA principles (-n) '
+    - name: 'SSH CA principles (-n)'
       file:
-        path: "/etc/ssh/auth_principals"
-        mode: 0440
+        path: /etc/ssh/auth_principals
+        mode: 0500
         owner: root
         group: root
         state: directory
@@ -339,17 +353,17 @@
       when: sshd_principles is defined
 
     - name: 'SSH CA revoked keys'
-      file:
-        path: "/etc/ssh/revoked"
+      copy:
+        dest: /etc/ssh/revoked
         mode: 0440
         owner: root
         group: root
-        state: file
         setype: sshd_key_t
+        content: "{{ revoked_keys | default('') }}"
 
     - name: 'public SSH User CA'
       copy:
-        dest: "/etc/ssh/ssh_ca_user.pub"
+        dest: /etc/ssh/ssh_ca_user.pub
         mode: 0440
         owner: root
         group: root
@@ -360,20 +374,19 @@
 
     - name: 'known hosts, public SSH host CA'
       copy:
-        dest: "/etc/ssh/known_hosts"
+        dest: /etc/ssh/known_hosts
         mode: 0444
         owner: root
         group: root
         setype: sshd_key_t
         content: "@cert-authority * {{ ssh_ca_host_pub }}"
-      register: ssh_user_ca
       when: ssh_ca_host_pub is defined
-  when: sshd_certificates is defined
+  when: sshd_certificates is defined and sshd_certificates | bool
 
 - name: 'sshd config'
   template:
     src: sshd.conf
-    dest: /etc/ssh/
+    dest: /etc/ssh/sshd_config
     owner: root
     group: root
     mode: '0600'
@@ -386,8 +399,8 @@
   systemd:
     name: sshd
     enabled: yes
-    state: restarted #restarted would be nice, but potentially dangerous
-  when: sshd_conf.changed or (ssh_host_ca.changed or ssh_user_ca.changed)
+    state: restarted
+  when: sshd_conf.changed or (ssh_host_ca.changed == True or ssh_user_ca.changed == True)
   register: sshd_restarted
 
 - name: activate sshd, same as handler
