@@ -151,6 +151,18 @@ trusted_ca_map:
     p4wTyVBIM8hjrLcKiChF43GRJtne7w==
     -----END CERTIFICATE-----
 
+user_groups:
+- name: deploy
+  sudo: "ALL=(ALL) NOPASSWD: ALL"
+  gid: 2000
+user_map:
+- uid: 1000
+  primary_group: nobody
+  name: unconfined
+  full_name: Unconfined Default
+  selinux: none
+  comment: not a real user, frequently distros and containers use this uid, do not use it
+  email: unused@example.com
 devops_ver: "2"
 exclude_criteria:
 addresses:

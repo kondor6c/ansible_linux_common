@@ -61,3 +61,20 @@
   - name: 'create qrcode for user html'
     shell: "qrencode -o - 'otpauth://totp/user@machine?{{ 2fa_code }}' | base64"
     register: 2fa_qr
+# moved from local_ssh_ca, the ssh CA should be stored securely, the content here is for signing host certificates (and generates the ssh ca)
+#https://blog.habets.se/2011/07/OpenSSH-certificates.html
+- block:
+  - name: 'generate the host ssh ca'
+    command: ssh-keygen -t ed25519 -C SSH_CA-ed25519 -f ed25519-host-ca
+  - name: 'read host SSH CA public key'
+    command: cat ed25519-host-ssh-ca.pub
+  - name: 'read host SSH CA private key'
+    command: cat ed25519-host-ssh-ca
+    register: ssh_host_ca_private
+  when: ssh_host_ca_private
+
+- name: "generate host key (to be signed later), No password, for group: {{ group }} at domain: {{ domain }}"
+  command: "ssh-keygen -N '' -t ed25519 -f ed25519-host-{{ group }}.{{ domain }}"
+- name: 'Sign host key, generate certificate Identity, signing key create Host cert, priNciple group and domain, Validity 52weeks, previous key file to sign'
+  command: "ssh-keygen -s ed25519-host-ca -I autoscaled_host_id -h -n {{ group }}.{{ domain }} -V +52w ed25519-host-{{ group }}.{{ domain }}"
+
