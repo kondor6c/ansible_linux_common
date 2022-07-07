@@ -1,0 +1,87 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: podman
+lint: |
+  set -e
+  yamllint -c molecule/default/yamllint.yml .
+  ansible-lint
+  flake8
+platforms:
+  - name: d11
+    image: quay.io/aminvakil/debian11-systemd
+    pre_build_image: true
+    groups:
+      - debian
+    capabilities:
+      - SYS_ADMIN
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+        #- name: c8
+        #  image: quay.io/aminvakil/rockylinux8-systemd
+        #  pre_build_image: true
+        #  capabilities:
+        #    - SYS_ADMIN
+        #  volumes:
+        #    - /sys/fs/cgroup:/sys/fs/cgroup:ro
+  - name: f35
+    image: quay.io/aminvakil/fedora35-systemd
+    pre_build_image: true
+    groups:
+      - fedora
+    capabilities:
+      - SYS_ADMIN
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    command: /usr/lib/systemd/systemd
+  - name: u2204
+    image: quay.io/aminvakil/ubuntu22.04-systemd
+    groups:
+      - ubuntu
+    capabilities:
+      - SYS_ADMIN
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+
+  - name: suse_tumble
+    image: docker.io/mesaguy/ansible-molecule-opensuse
+    groups:
+      - suse
+    capabilities:
+      - SYS_ADMIN
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+  - name: u2004
+    image: quay.io/aminvakil/ubuntu20.04-systemd
+    command: /sbin/init
+    groups:
+      - ubuntu
+    capabilities:
+      - SYS_ADMIN
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+  - name: instance
+    image: marcstraube/docker-archlinux-base-ansible:latest
+    pre_build_image: true
+    capabilities:
+      - SYS_ADMIN
+    command: /usr/lib/systemd/systemd
+provisioner:
+  name: ansible
+  env:
+    ANSIBLE_PIPELINING: true
+  inventory:
+    group_vars:
+      debian:
+        repo_criteria: debian
+      ubuntu:
+        apt_additional:
+          install:
+            - linux-image-virtual
+            - linux-tools-virtual
+        repo_criteria: ubuntu
+      fedora:
+        repo_criteria: fedora
+verifier:
+  name: ansible

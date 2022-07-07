@@ -1,6 +1,6 @@
 ---
 # Prepath is intended for building chrooted environments (containers or surrogate builds)
-- name: 'ensure prepath and dnf config dir exist'
+- name: ensure prepath and dnf config dir exist
   file:
     state: directory
     owner: root
@@ -9,8 +9,9 @@
     mode: 0755
     setype: system_conf_t
   tags:
-    - 'chroot'
-- name: 'custom dnf config, yum proxy'
+    - chroot
+
+- name: custom dnf config, mostly to support yum proxy
   template:
     dest: "{{ prepath |default('') }}{{ yum_conf | default('/etc/dnf/') }}"
     src: dnf.conf
@@ -18,29 +19,32 @@
     mode: 0644
     owner: root
     group: root
-  when: ansible_pkg_mgr == "dnf"
+  when: ansible_facts.pkg_mgr == "dnf"
   tags:
-    - 'chroot'
+    - chroot
 
 - name: 'custom yum config, yum proxy. With the above, I could remove this centos7 work around AND bring in support for building chroots'
   template:
     dest: /etc/yum.conf
+    setype: etc_t
     src: dnf.conf
     mode: 0644
     owner: root
     group: root
-  when: ansible_pkg_mgr == "yum"
+  when: ansible_facts.pkg_mgr == "yum"
+  # also, on centos 7, the directory dnf is already created by the steps above, which is not ideal
+  # perhaps register the directory or/and use a ternary based on which package manager
 
-- name: 'yum repo block'
+- name: yum repo block
   block:
     - name: all yum repos as yaml
       set_fact:
         yum_repos: "{{ default_yum_repos | flatten(levels=1) |
-          selectattr('tags', 'search', pkg_criteria) |
+          selectattr('tags', 'search', repo_criteria) |
           rejectattr('tags','contains',exclude_criteria ) |list  }}"
-      when: yum_repos is not defined and pkg_criteria is defined
+      when: (yum_repos is not defined) and (repo_criteria is defined)
       tags:
-        - 'chroot'
+        - chroot
 
     - name: check GPG file
       stat:
@@ -52,7 +56,7 @@
       loop_control:
         loop_var: rpm_key
 
-    - name: 'ensure prepath and rpm keys exist'
+    - name: ensure prepath and rpm keys exist
       file:
         state: directory
         owner: root
@@ -61,7 +65,7 @@
         mode: 0755
         setype: system_conf_t
       tags:
-        - 'chroot'
+        - chroot
 
     - name: 'transfer GPG keys to directory'
       copy:
@@ -75,15 +79,15 @@
       when: not rpm_key.stat.exists
       register: rpm_keys
       tags:
-        - 'chroot'
+        - chroot
 
-    - name: 'trust RPM GPG key'
+    - name: trust RPM GPG key
       rpm_key:
         state: present
         key: "{{ item | regex_replace('file:///','') | regex_replace('\\$releasever', ansible_distribution_version ) | regex_replace('\\$basearch',ansible_architecture) }}"
       loop: "{{ rpm_gpg_keys }}"
       when: rpm_keys.changed
-  when: criteria is defined or yum_repos is defined
+  when: (repo_criteria is defined or yum_repos is defined)
 
  ## Begin Approach 1
  #  - name: 'get list of existing repository files'
@@ -100,15 +104,18 @@
  #      loop_var: repo_file
  #    register: stock_repo
  # End approach 1
-
-- name: 'rpm'
-  command: "rpm -qa" #| grep -e '-release' |xargs rpm -ql |grep repo"
+# What we are doing here and why:
+# repositories can be installed as packages, so we find all packages and look for release and repos
+# to then get a list of their repo files. Rather than just blindly assuming anything in /etc/yum.repos.d/*repo is a repo
+# This might be overkill, but with RHEL AWS having different repositories I had found the precision useful
+- name: rpm get package list
+  command: rpm -qa #| grep -e '-release' |xargs rpm -ql |grep repo"
   register: all_packages
 
-- name: 'filter and loop'
+- name: filter and loop
   command: "rpm -ql {{ yum_pkg }}"
   register: stock_repos
-  loop: "{{ all_packages.stdout_lines | select('match','^.*(-release|-repos)')| list }}"
+  loop: "{{ all_packages.stdout_lines | select('match','^/etc/.*(-release|-repos)')| list }}"
   loop_control:
     label: "checking for repository files in RPM: {{ yum_pkg }}"
     loop_var: yum_pkg
@@ -123,18 +130,17 @@
     path: "{{ file_path }}"
   loop: "{{ repo_list }}"
   register: yum_repo_file_check
-  when: criteria |bool
+  when: repo_criteria |bool
   loop_control:
     loop_var: file_path
 
-- name: 'touch if file was not there, deprecate since we have create at lineinfile'
+- name: touch if file was not there, deprecate since we have create at lineinfile
   file:
     path: "{{ files.file_path }}"
     state: absent
     owner: root
     group: root
-    setype: etc_t
-  when: files.stat is defined and files.stat.exists # We need to check that stat is there, because above, might not run if criteria is not defined. See README, package_repo section
+  when: files.stat is defined and files.stat.exists # We need to check that stat is there, because above, might not run if repo_criteria is not defined. See README, package_repo section
   loop: "{{ yum_repo_file_check.results }}"
   loop_control:
     loop_var: files
@@ -152,7 +158,7 @@
     #        loop_var: files
     #        label: "disabling release repository file: {{ files.file_path }}"
 
-- name: 'ensure prepath and dnf config dir exist'
+- name: ensure prepath and dnf config dir exist
   file:
     state: directory
     owner: root
@@ -163,7 +169,7 @@
   tags:
     - 'chroot'
 
-- name: 'install custom repositories'
+- name: install custom repositories
   template:
     dest: "{{ prepath | default('') }}/etc/yum.repos.d/{{ item.title }}.repo"
     src: repo.ini
@@ -176,22 +182,23 @@
   tags:
     - 'chroot'
 
-- name: 'install packages that might fail, due to different names'
+- name: install packages for a chroot, that might fail, due to different names
   yum:
     name: "{{ common_packages.install + dnf_packages.install }}"
     state: present
-    installroot: "{{ prepath }}"
-  when: prepath |length >= 1
+    installroot: "{{ prepath |default(omit) }}"
+  when: prepath is defined and prepath |length >= 1
   tags:
     - 'chroot'
+
 - name: 'install packages that might fail, due to different names'
   yum:
-    name: "{{ common_packages.install + dnf_packages.install }}"
+    name: "{{ common_packages.install + (dnf_additional.install | default([]) ) + dnf_packages.install }}"
     state: present
   tags:
     - 'chroot'
 
 - name: 'remove packages that a default installs and we totally do not need'
   yum:
-    name: "{{ common_packages.absent + dnf_packages.absent }}"
+    name: "{{ common_packages.absent + (dnf_additionall.absent | default([]) ) + dnf_packages.absent }}"
     state: absent

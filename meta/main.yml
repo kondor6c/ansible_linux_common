@@ -2,6 +2,8 @@ galaxy_info:
   author: Kevin Faulkner
   description: 'common tasks often low lying'
   company: any
+  role_name: ansible_linux_common  # if absent directory name hosting role is used instead
+  namespace: lazytree
 
   # Choose a valid license ID from https://spdx.org - some suggested licenses:
   # - BSD-3-Clause (default)
@@ -20,8 +22,7 @@ galaxy_info:
   platforms:
     - name: Fedora
       versions:
-        - 31
-        - 32
+        - 36
     - name: Centos
       versions:
         - 7

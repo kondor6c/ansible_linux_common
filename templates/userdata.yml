@@ -1,0 +1,73 @@
+# keep images immutable and predictable with fast boot times, have upgrades be done in template creation
+package_upgrade: false
+packages:
+ - postfix
+ - curl
+ - clamav
+ - tuned-tools
+ - curl
+ - vim-enhanced
+ - awscli
+users:
+  - name: myuser
+    groups: sudo
+    shell: /bin/zsh
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    ssh-authorized-keys:
+      - ssh-rsa AAAAB3NzaC... 
+write_files:
+ - path: /etc/chef/client.rb
+   owner: root:root
+   mode: '0644'
+   content: |
+     log_level :info
+     log_location "/var/log/chef-client.log"
+     chef_server_url "${automation_chef_server_url}"
+     validation_client_name "autoscale-group-validator"
+     validation_key "/etc/chef/autoscale-group-validator.pem"
+     ssl_verify_mode :verify_none
+     environment "${automation_environment}"
+     json_attribs "/etc/chef/client.json"
+ - path: /etc/chef/client.json
+   owner: root:root
+   mode: '0644'
+   content: { "run_list": "recipe[${automation_role}]" }
+ - path: /etc/systemd/system/deregister_chef.service
+   owner: root:root
+   mode: '0644'
+   content: |
+     [Unit]
+     Description='deregister node and client only upon shutdown'
+     [Service]
+     Type=oneshot
+     ExecStopPre=/usr/bin/knife node delete $(curl --silent -X GET --retry 2 --retry-max-time 5 --max-time 10 http://169.254.169.254/latest/meta-data/instance-id) -c /etc/chef/client.rb -y
+     ExecStopPre=/usr/bin/knife client delete $(curl --silent -X GET --retry 2 --retry-max-time 5 --max-time 10 http://169.254.169.254/latest/meta-data/instance-id) -c /etc/chef/client.rb -y
+     ExecStopPre=rm -f /etc/chef/client.pem
+     ExecStop=sleep 10
+     RemainAfterExit=yes
+     [Install]
+     WantedBy=multi-user.target
+runcmd:
+ - curl --silent http://169.254.169.254/latest/meta-data/local-ipv4 | awk '{gsub("\\.","-",$0); print "HOSTNAME=ip-" $0}' | tee -a /etc/devops/env
+ - curl --silent http://169.254.169.254/latest/meta-data/local-ipv4 | awk '{ print "IP=" $0}' | tee -a /etc/devops/env
+ - aws s3 sync --sse --exclude backups/* s3://${automation_s3_bucket}/secrets/${automation_environment}/chef/ /etc/chef/
+ - systemctl daemon-reload
+ - systemctl enable deregister_chef --now 
+timezone: UTC
+preserve_hostname: false
+fqdn: ews.int
+final_message: "The system is finally up, after $UPTIME seconds"
+bootcmd:
+ - [ cloud-init-per, once, mymkfs, mkfs.xfs, -n ftype=1, /dev/ephemeral0 ]
+disk_setup:
+  
+mounts:
+ - [ ephemeral0, /var/lib/docker, auto, "noatime" ]
+ - [ xvdh, /opt/data, "auto", "defaults,nofail", "0", "0" ]
+ datasource:
+  Ec2:
+    timeout : 50
+    max_wait : 120
+
+    metadata_urls:
+     - http://169.254.169.254:80

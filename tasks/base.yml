@@ -1,64 +1,7 @@
 ---
-##### BEGIN Certificates and PKI #####
-- name: set pki location, it seems that the accepted standard is /etc/ssl/, but sometime early on there was a question posed to a mailing list and /etc/pki was born
-  set_fact:
-    filesystem_pki: "{% if ansible_os_family == 'RedHat' %}{{ prepath }}/etc/pki/ca-trust/source/anchors/{% elif ansible_os_family == 'Debian' %}/etc/ssl/certs/{% endif %}"
-  tags:
-    - 'chroot'
-
-- name: 'import certificates from variable'
-  copy:
-    content: "{{ item.value }}"
-    dest: "{{ filesystem_pki }}{{ item.key }}"
-    mode: 0664
-    owner: root
-    group: root
-    setype: cert_t
-    validate: "openssl x509 -in %s"
-  loop: "{{ trusted_ca_map |  default({}) | dict2items }}"
-  register: cert_map
-  tags:
-    - 'chroot'
-
-- name: 'transfer certificates to trust directory'
-  copy:
-    src: "{{ item }}"
-    dest: "{{ filesystem_pki }}{{ item }}"
-    mode: 0664
-    owner: root
-    group: root
-    setype: cert_t
-    validate: "openssl x509 -in %s"
-  loop: "{{ trusted_ca_file_list }}"
-  when: trusted_ca_file_list is defined
-  tags:
-    - 'chroot'
-
-##### END Certificates and PKI #####
-##### BEGIN OS Packaging and Repositories #####
-- name: 'initial redhat distribution specific block'
-  block:
-    - name: 'typically redhat method'
-      command: update-ca-trust force-enable
-      when: cert_map.changed
-    - name: 'package manager related tasks'
-      include_tasks: "rpm.yml"
-      when: criteria is defined
-      tags:
-        - 'chroot'
-  when: ansible_os_family == 'RedHat' or ansible_os_family == 'Archlinux'
-
-- name: 'initial debian distribution specific block'
-  block:
-    - name: 'typically debian method'
-      command: update-ca-certificates
-      when: cert_map.changed
-    - name: 'package manager related tasks'
-      include_tasks: "apt.yml"
-  when: ansible_os_family == 'Debian' or ansible_os_family == 'Suse'
 
 ##### END OS Packaging and Repositories #####
-- name: 'upgrade all packages, asynchronously'
+- name: upgrade all packages, asynchronously
   package:
     name: '*'
     state: latest
@@ -102,14 +45,14 @@
       loop_control:
         loop_var: iface
 
-    - name: 'enable networkd manual handler'
+    - name: enable networkd manual handler
       systemd:
         name: systemd-networkd
         state: restarted
         enabled: yes
       when: primary_networkd.changed
 
-    - name: 'enable resolved'
+    - name: enable resolved
       systemd:
         name: systemd-resolved
         state: restarted
@@ -117,7 +60,7 @@
       register: resolved_unit
       when: resolvers is defined
 
-    - name: "Set resolv.conf when using resolved"
+    - name: Set resolv.conf when using resolved
       file:
         src: /run/systemd/resolve/stub-resolv.conf
         force: yes
@@ -128,7 +71,7 @@
 
 - name: static hosts entries
   block:
-    - name: 'hosts, for localnet domain'
+    - name: hosts, for localnet domain
       template:
         src: etc_hosts.j2
         dest: /etc/hosts
@@ -149,16 +92,16 @@
       when: net_hosts | selectattr('hwaddr','defined')
       register: arp_file
 
-    - name: 'copy ethers service, not present on ubuntu'
+    - name: copy ethers service, not present on ubuntu
       template:
         src: arp-ethers.service
         dest: /etc/systemd/system/
         owner: root
         group: root
         mode: '0644'
-      when: ansible_os_family == 'Debian' and arp_file.changed or ( "net-tools" not in common_packages.install and "net-tools" not in dnf_packages.install )
+      when: ansible_facts['os_family'] == 'Debian' and arp_file.changed or ( "net-tools" not in common_packages.install and "net-tools" not in dnf_packages.install )
 
-    - name: 'ethers service, seed arp tables from file'
+    - name: ethers service, seed arp tables from file
       systemd:
         name: arp-ethers.service
         enabled: yes
@@ -170,30 +113,32 @@
       hostname:
         name: "{{ net_hosts |selectattr('interfaces',) }}.{{ domain |default('unset') }}"
       register: net_hosts_hostname
-      when: net_hosts | selectattr('hwaddr','match',ansible_default_ipv4.macaddress)
+      when: net_hosts | selectattr('hwaddr','match',ansible_facts['default_ipv4'].macaddress)
 
     - name: set preserve on hostname because we just set it above
       set_fact:
         hostname: '_preserve_'
       when: net_hosts_hostname.changed
   when: net_hosts is defined
-- name: "Set nameserver"
+
+- name: Set nameserver
   debug:
     msg: "place holder for modifying dns in /etc/resolv.conf"
 ##### END Network configuration: Networkd #####
-##### BEGIN Basic tasks #####
+##### BEGIN Basic system tasks #####
 - name: set hostname
   hostname:
-    name: "{{ hostname | default(ansible_machine_id) }}.{{ domain |default('unset') }}"
+    name: "{{ hostname | default(ansible_facts['machine_id']) }}.{{ domain |default(omit) }}"
   when: hostname is not defined or hostname != "_preserve_"
 
-- name: "Set timezone to variable 'timezone'"
+- name: Set timezone to variable 'timezone'
   timezone:
     name: "{{ timezone | default('UTC') }}"
-  when: timezone is not defined or timezone != "_preserve_"
- 
-##### END Basic tasks #####
+  when: timezone != "_preserve_"
+
+##### END Basic system tasks #####
 ##### BEGIN Human User configurations #####
+# This is just a time saver, and since these empty files and directories don't consume much space, why not
 - name: skel create .ssh, for new accounts
   file:
     owner: root
@@ -234,7 +179,7 @@
       syntax enable
       colorscheme desert
 
-- name: 'banner'
+- name: banner
   copy:
     owner: root
     group: root
@@ -242,9 +187,19 @@
     dest: /etc/banner
     setype: etc_t
     content: |
-      {{ banner | default('welcome') }}
+      {{ pre_remote_banner | default('welcome') }}
 
-- name: 'remote users banner issue'
+- name: display message upon successful login, replaces much of ubuntu landscape text
+  copy:
+    owner: root
+    group: root
+    mode: 0644
+    dest: /etc/motd
+    setype: etc_t
+    content: |
+      {{ post_login_banner | default(' ip: \4  automation_version: ' + devops_ver ) }}
+
+- name: issue banner displayed on both remote and local pre login
   copy:
     owner: root
     group: root
@@ -252,23 +207,32 @@
     dest: /etc/issue
     setype: etc_t
     content: |
-      {{ banner | default(' ip: \4  automation_version: ' + devops_ver ) }}
+      {{ pre_login_local_banner | default(' ip: \4  automation_version: ' + devops_ver ) }}
 
-- name: change default history
+- name: change default history, preference towards preserving history
   lineinfile:
     path: /etc/profile
     regexp: '^HISTSIZE='
     line: HISTSIZE=9000
     owner: root
     group: root
-    mode: '0644'
+    mode: 0644
+
+- name: change global bashrc
+  lineinfile:
+    path: "/etc/{{ system_bashrc }}"
+    insertafter: '^SHELL='
+    line: 'HISTTIMEFORMAT="%Y-%m-%d %H:%M:%S  "'
+    owner: root
+    group: root
+    mode: 0644
 
 - name: import initial user tasks
   import_tasks: users_and_groups.yml
 
 ##### END Human User configurations #####
 ##### BEGIN systemd #####
-- name: 'journald config'
+- name: journald config
   template:
     src: journald.conf
     dest: /etc/systemd/
@@ -277,7 +241,7 @@
     mode: '0644'
     setype: etc_t
 
-- name: 'logind config'
+- name: logind config
   template:
     src: logind.conf
     dest: /etc/systemd/
@@ -286,7 +250,34 @@
     mode: '0644'
     setype: etc_t
 
-- name: 'systemd config'
+- name: sleep config
+  template:
+    src: sleep.conf
+    dest: /etc/systemd/
+    owner: root
+    group: root
+    mode: '0644'
+    setype: etc_t
+
+- name: pstore config
+  template:
+    src: pstore.conf
+    dest: /etc/systemd/
+    owner: root
+    group: root
+    mode: '0644'
+    setype: etc_t
+
+- name: resolved config
+  template:
+    src: resolved.conf
+    dest: /etc/systemd/
+    owner: root
+    group: root
+    mode: '0644'
+    setype: etc_t
+
+- name: systemd config
   template:
     src: system.conf
     dest: /etc/systemd/
@@ -300,11 +291,11 @@
   file:
     owner: root
     group: root
-    path: "/etc/cloud/cloud-init.disabled"
+    path: /etc/cloud/cloud-init.disabled
     mode: 0755
-    setype: tuned_etc_t
-    state: directory
-  when: tuned_profile is defined
+    setype: etc_t
+    state: touch
+  when: disable_cloud_init is defined
 
 - name: create a custom tuned profile
   file:
@@ -316,11 +307,60 @@
     state: directory
   when: tuned_profile is defined
 
+- name: create a custom sysctl changes
+  sysctl:
+    sysctl_file: ansible_linux_common
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+  loop: "{{ performance_sysctl |combine(security_sysctl) | dict2items }}"
+  tags:
+    - notest
+
+- name: check if EFI
+  stat:
+    path: /sys/firmware/efi
+  register: efi
+
+- name: changes needed for serial output
+  block:
+    - name: change grub default CMDLINE
+      lineinfile:
+        path: /etc/default/grub
+        create: yes
+        regexp: '^GRUB_SERIAL_COMMAND='
+        line: 'GRUB_SERIAL_COMMAND="serial --unit=0 --speed=115200 --parity=no --word=8  --stop=1"'
+        owner: root
+        group: root
+        mode: 0644
+      notify: handle_grub
+
+    - name: change grub default CMDLINE
+      lineinfile:
+        path: /etc/default/grub
+        regexp: '^GRUB_TERMINAL_INPUT='
+        line: GRUB_TERMINAL_INPUT='console serial_ttyS0'
+        owner: root
+        group: root
+        mode: 0644
+      notify: handle_grub
+  when: kernel_boot_cmdline | regex_search('ttyS0')
+
+- name: allow serial and other kernel cmd line changes
+  lineinfile:
+    path: /etc/default/grub
+    regexp: '^GRUB_CMDLINE_LINUX="(.*)"$'
+    backrefs: yes
+    backup: true
+    line: "GRUB_CMDLINE_LINUX=\\\"\\g<1> {{ kernel_boot_cmdline | default('') }} \\\""
+    notify: handle_grub
+  tags:
+    - notest
+
 ##### END other utilities #####
 ##### BEGIN SSH config #####
-- name: 'openSSH CA'
+- name: openSSH CA
   block:
-    - name: 'public SSH CA host certiticate'
+    - name: public SSH CA host certiticate
       copy:
         dest: /etc/ssh/ssh_host_cert.key
         mode: 0400
@@ -329,9 +369,10 @@
         setype: sshd_key_t
         content: |
           {{ ssh_host_cert_key }}
+      notify: handle_sshd
       when: ssh_host_cert_key is defined
 
-    - name: 'public SSH CA host certiticate'
+    - name: public SSH CA host certiticate
       copy:
         dest: /etc/ssh/ssh_host_cert.pub
         mode: 0400
@@ -340,9 +381,10 @@
         setype: sshd_key_t
         content: "{{ ssh_host_cert_pub }}"
       register: ssh_host_ca
+      notify: handle_sshd
       when: ssh_host_cert_pub is defined
 
-    - name: 'SSH CA principles (-n)'
+    - name: SSH CA principles (-n)
       file:
         path: /etc/ssh/auth_principals
         mode: 0500
@@ -350,9 +392,10 @@
         group: root
         state: directory
         setype: sshd_key_t
+      notify: handle_sshd
       when: sshd_principles is defined
 
-    - name: 'SSH CA revoked keys'
+    - name: SSH CA revoked keys
       copy:
         dest: /etc/ssh/revoked
         mode: 0440
@@ -360,8 +403,9 @@
         group: root
         setype: sshd_key_t
         content: "{{ revoked_keys | default('') }}"
+      notify: handle_sshd
 
-    - name: 'public SSH User CA'
+    - name: public SSH User CA
       copy:
         dest: /etc/ssh/ssh_ca_user.pub
         mode: 0440
@@ -370,9 +414,10 @@
         setype: sshd_key_t
         content: "{{ ssh_ca_user_pub }}"
       register: ssh_user_ca
+      notify: handle_sshd
       when: ssh_ca_user_pub is defined
 
-    - name: 'known hosts, public SSH host CA'
+    - name: known hosts, public SSH host CA
       copy:
         dest: /etc/ssh/known_hosts
         mode: 0444
@@ -380,72 +425,40 @@
         group: root
         setype: sshd_key_t
         content: "@cert-authority * {{ ssh_ca_host_pub }}"
+      notify: handle_sshd
       when: ssh_ca_host_pub is defined
   when: sshd_certificates is defined and sshd_certificates | bool
 
-- name: 'sshd config'
+- name: sshd config
   template:
     src: sshd.conf
-    dest: /etc/ssh/sshd_config
+    dest: "/etc/ssh/{{ ansible_facts.os_family | regex_search('Debian') | ternary('sshd.config', 'sshd_config') }}"
     owner: root
     group: root
     mode: '0600'
     setype: etc_t
+  notify: handle_sshd
   register: sshd_conf
     #https://github.com/ansible/ansible/issues/19243
     #validate: "/usr/sbin/sshd -c -T %s"
-    
-- name: activate sshd, same as handler
-  systemd:
-    name: sshd
-    enabled: yes
-    state: restarted
-  when: sshd_conf.changed or (ssh_host_ca.changed == True or ssh_user_ca.changed == True)
-  register: sshd_restarted
-
-- name: activate sshd, same as handler
-  systemd:
-    name: sshd
-    enabled: yes
-    state: started #restarted would be nice, but potentially dangerous
-  when: sshd_restarted.skipped is defined
 
 ##### END SSH config #####
 
-- name: 'chrony, NTP time config'
+- name: chrony, NTP time config
   template:
     src: chrony.conf
     dest: /etc/chrony.conf
     owner: root
     group: root
     setype: etc_t
-    mode: '0600'
-  register: chrony_conf
+    mode: 0600
+  notify: handle_chrony
 
-- name: 'chrony service'
-  systemd:
-    name: chronyd
-    enabled: yes
-    state: restarted
-  when: chrony_conf.changed
- 
-- name: 'secondary, concurrent to upgrades redhat distribution specific block'
-  block:
-    - name: 'package manager related tasks'
-      import_tasks: "RedHat_family.yml"
-  when: ansible_os_family == 'RedHat' or ansible_os_family == 'Archlinux'
+#- name: 'secondary, concurrent to upgrades redhat distribution specific block'
+#  import_tasks: "{{ ansible_facts['os_family'] }}_family.yml"
 
-- name: 'secondary, concurrent to upgrades redhat distribution specific block'
-  block:
-    - name: 'related tasks'
-      import_tasks: "Debian_family.yml"
-  when: ansible_os_family == 'Debian' and ansible_os_family == 'Suse'
-    # Remove
-    #- name: import all clamav tasks, clamav is a package on fedora, opensuse, ubuntu, gentoo and arch
-    #  import_tasks: clamav.yml
-    #  when: "'clamav' in common_packages.install"
 ##### BEGIN Logging #####
-- name: 'rsyslog main configuration file'
+- name: rsyslog main configuration file
   template:
     src: rsyslog.conf
     dest: /etc/
@@ -454,19 +467,13 @@
     mode: '0644'
     setype: syslog_conf_t
     validate: "rsyslogd -N1 -f %s"
-  register: rsyslog_conf
+  notify: handle_rsyslog
 
-- name: activate rsyslog, same as handler
-  systemd:
-    name: rsyslog
-    enabled: yes
-    state: restarted
-  when: rsyslog_conf.changed
 # TODO add logrotate, grub, udev, modprobe, sysctl
 
 ##### END Logging #####
 
-- name: clean image template 
+- name: clean image template
   block:
     - name: clean logs
       command: "/bin/rm -rf {{ item }}"
@@ -475,7 +482,11 @@
         - "/var/cache/*"
         - "/root/.cache"
         - "/root/.bash_history"
+        - "/var/tmp/*"
   when: clean_files is defined
+
+- name: flush handlers while package upgrade takes place
+  meta: flush_handlers
 
 - name: 'wait for package upgrade to finish'
   async_status:

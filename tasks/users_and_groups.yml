@@ -29,30 +29,29 @@
     loop_var: g
   tags:
     - groupadd
+
 - name: add the user
   block:
-    - name: 'add users'
+    - name: add users
       user:
         name: "{{ u.name }}"
-        uid: "{{ u.uid }}"
+        uid: "{{ u.uid | default( 10001 | random(start=1000 ) ) }}" #TODO random default
         comment: "{{ u.comment | default('no comment') }}"
         state: present
         home: "{{ u.home_dir | default('/home/' + u.name ) }}"
         groups: "{{ u.primary_group }}"
       loop: "{{ user_map }}"
       register: users_added
-      when: user_map | length >= 1 
       loop_control:
         loop_var: u
       tags:
         - useradd
 
-    - name: 'auth_key module '
+    - name: auth_key module
       authorized_key:
         user: "{{ u.0.name }}"
         key: "{{ u.1 }}"
-      when: u | length >= 1
-      loop: "{{ user_map |subelements('public_keys') }}"
+      loop: "{{ user_map | subelements('public_keys', skip_missing=True )  }}"
       loop_control:
         loop_var: u
       tags:
@@ -60,34 +59,52 @@
         - authorized_keys
   when: user_map is defined and user_map | length >= 1 
 
-- name: 'core sudoers file'
+- name: core sudoers file
   template:
     src: sudoers.j2
     dest: /etc/sudoers
     owner: root
     group: root
     mode: '0400'
+    setype: etc_t
     validate: '/usr/sbin/visudo -cf %s'
     backup: yes
 
 - name: revoke specified users
   block:
-    - name: if argument is passed, add it
+    - name: if argument to the task is passed, add it 
+# this was a compatibility addition when this task was called and then looped over the user list
       set_fact:
         revoked_users: "{{ revoked_user | combine(revoked_user: 'purge') }}"
-      when: revoke_user is defined
+      when: revoked_user is defined
 
     - name: new kill
       command: "pkill --signal 9 -U {{ u.key }}"
+      # I do not advocate using ignore errors, but, if there are not processes from a revoked user, it should not error out
       ignore_errors: true
       loop: "{{ revoked_users |dict2items }}"
       when: u.value != 'soft'
       loop_control:
         loop_var: u
 
-    - name: archive user contents
-      command: "tar czf userhome_{{ u.key }}_archive.tar.gz /home/{{ u.key }}"
+    - name: archive user contents, often accounts and dirs are not cleaned, this should help
+      command:
+        cmd: "tar czf userhome_{{ u.key }}_archive.tar.gz /home/{{ u.key }}"
+        creates: "/home/{{ u.key }}"
       when: ( users[u.key]['archive_home'] is defined and users[u.key]['archive_home'] |bool == True) or (u.value == 'archive' )
+      loop: "{{ revoked_users |dict2items }}"
+      loop_control:
+        loop_var: u
+
+    - name: disable systemd linger, just in case the operator had enabled it and jobs would be running
+      command: "loginctl disable-linger {{ u.key }}"
+      loop: "{{ revoked_users |dict2items }}"
+      loop_control:
+        loop_var: u
+
+    - name: massive chown
+      debug:
+        msg: "find /path -user {{ u.key }}  chown it later, set xattr like xdg.user.xauto_user=foo"
       loop: "{{ revoked_users |dict2items }}"
       loop_control:
         loop_var: u
@@ -97,8 +114,7 @@
         name: "{{ u.key }}"
         remove: yes
         state: absent
-      when: (revoked_users is defined) and (revoked_users |length >= 1)
       loop: "{{ revoked_users |dict2items }}"
       loop_control:
         loop_var: u
-  when: revoked_users | length >= 1
+  when: (revoked_users is defined) and (revoked_users |length >= 1)

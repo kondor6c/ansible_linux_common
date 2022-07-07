@@ -24,8 +24,6 @@ dnf_packages:
     - aic94xx-firmware
 apt_packages:
   install:
-    - linux-image-virtual
-    - linux-tools-virtual
     - aide-common
     - clamav-daemon
     - spice-vdagent
@@ -45,6 +43,7 @@ apt_packages:
     #- wireless-regdb
 ntp_servers:
   - time.nist.gov
+timezone: Etc/UTC
 harden: false
 # prepath is for bootstrapping chroot'ed systems
 prepath: ''
@@ -53,17 +52,14 @@ pkg_upgrade_all: true
 package_proxy: _none_ #example: http://user@pass:proxy.localnet:3128
 http_proxy: _none_
 https_proxy: proxy.localnet
-performance:
-  sysctl:
-    vm.min_free_kbytes: 1048576
-    vm.dirty_background_bytes: 107374182
-    net.ipv4.tcp_fastopen: 3
-    net.ipv4.tcp_slow_start_after_idle: 0
-groups:
-  - name: automation
-    gid: 2222
-    status: present
-    sudo: "ALL=(ALL)	NOPASSWD: ALL"
+performance_sysctl:
+  vm.min_free_kbytes: 1048576
+  vm.dirty_background_bytes: 107374182
+  net.ipv4.tcp_fastopen: 3
+  net.ipv4.tcp_slow_start_after_idle: 0
+
+kernel_boot_cmdline: 'console=tty0 console=ttyS0,115200'
+
 udev:
   - 'ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="0624", ATTR{idProduct}=="0013", ATTR{product}=="SC Secure KVM", TEST=="power/control", ATTR{power/control}:="on"'
 user_message: |
@@ -155,20 +151,26 @@ user_groups:
 - name: deploy
   sudo: "ALL=(ALL) NOPASSWD: ALL"
   gid: 2000
+revoked_users: {}
 user_map:
 - uid: 1000
-  primary_group: nobody
+  primary_group: users
   name: unconfined
   full_name: Unconfined Default
   selinux: none
   comment: not a real user, frequently distros and containers use this uid, do not use it
   email: unused@example.com
-devops_ver: "2"
+
+# devops_ver MUST be a string
+devops_ver: "2.5"
 exclude_criteria:
-addresses:
+
+
+interfaces:
   primary:
     - '10.1.1.1/24'
     - 'fe80::fc54:ff:fecb:61ea/64'
+    - 'dhcp,masq,fwd'
 #externalv4: "10.1.1.1/24" # ip address, could have cidr embedded
 dns_server:
   - dhcp
@@ -176,14 +178,14 @@ disk:
   - name: lv_vg
     size: 500GB
     fs: xfs
-    fs_opts: -n ftype=1 
+    fs_opts: -n ftype=1
     mount: /var/lib/docker
     devices:
       - vdb
       - vdc
   - name: simple
     size: 750GB
-    fs: ext4
+    fs: btrfs
     mount: /srv/containers
     devices:
       - vdd
@@ -275,6 +277,33 @@ default_apt_repos:
       Suites: $releasever
     tags:
       - ubuntu
+  - mirrors:
+      - protocol: http://
+        path: /debian
+        host: deb.debian.org
+    options:
+      Components: main
+      Suites: $releasever
+    tags:
+      - debian
+  - mirrors:
+      - protocol: http://
+        path: /debian-security
+        host: security.debian.org
+    options:
+      Components: main
+      Suites: $releasever-security
+    tags:
+      - debian
+  - mirrors:
+      - protocol: http://
+        path: /debian
+        host: deb.debian.org
+    options:
+      Components: main
+      Suites: $releasever-updates
+    tags:
+      - debian
 
 default_yum_repos:
   - title: elasticsearch-6.x

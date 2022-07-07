@@ -1,26 +1,50 @@
 # Simple networkd config put down by linux_common
+{% set iface_opts = iface.value.split(',') %}
 [Match]
-{% if 'primary' in iface.key or ( iface.key | list |intersect(ansible_interfaces) | length >= 1 ) %}
+{% if 'primary' in iface.key or ( iface.key | list |intersect(ansible_interfaces) | length == 1 ) %}
 Name={{ iface.key.replace('primary', ansible_default_ipv4.alias) }}
 {% elif iface.key | regex_search(':') | bool %}
 MACAddress={{ iface.key | default( ansible_default_ipv4['macaddress']) }}
 {% endif %}
 
 [Network]
-{% if "dhcpv6" and "dhcp" in iface.value %}
-DHCP=yes
-Address=DHCP
-{% elif "dhcp" in iface.value %}
-DHCP=ipv4
-Address=DHCP
-{% elif 'dhcpv6' in iface.value %}
-DHCP=ipv6
-Address=DHCP
-LLDP=false
-{% else %}
-{% for ip in iface.value %}{% if '-' in ip %}
-Address={{ ip.split('-')[0] }}
-Gateway={{ ip.split('-')[1] }}
-DNS={{ resolvers }}
-{% endif %}{% endfor %}
-{% endif %}
+Description=Primary interface configured by linux_common using ansible
+{%- if 'masq' in iface_opts %}
+  IPMasquerade=yes
+{%- endif %}
+{%- if 'fwd' in iface_opts %}
+  IPForwarding=yes
+{%- endif -%}
+
+{% if iface.value.startswith("dhcp") -%}
+  LinkLocalAddressing=no
+  LLDP=false
+  {%- if iface.value.endswith("v6") -%}
+    DHCP=ipv6
+    IPv6PrivacyExtensions=kernel
+    IPv6AcceptRA=yes
+    [IPv6AcceptRA]
+    UseDNS=false
+
+    [DHCPv6]
+    RapidCommit=yes
+    [QDisc]
+    Parent=clsact
+  {%- elif iface.value.endswith("v4") -%}
+    DHCP=ipv4
+  {%- else -%}
+    DHCP=yes
+    [Route]
+    Gateway=_dhcp4
+    InitialCongestionWindow=20
+    InitialAdvertisedReceiveWindow=20
+    QuickAck=True
+    FastOpenNoCookie=True
+  {%- endif %}
+{%- else -%}{# now static interfaces %}
+  {% for ip in iface.value %}{% if '-' in ip %}
+  Address={{ ip.split('-')[0] }}
+  Gateway={{ ip.split('-')[1] }}
+  DNS={{ resolvers }}
+  {% endif %}{% endfor %}
+{%- endif -%}

@@ -1,0 +1,11 @@
+---
+- name: Converge
+  hosts: all
+  vars:
+    hostname: _preserve_
+    revoked_users: {}
+
+  tasks:
+    - name: Include ansible_linux_common
+      include_role:
+        name: ansible_linux_common

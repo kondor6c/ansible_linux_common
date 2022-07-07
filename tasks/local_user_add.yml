@@ -61,7 +61,7 @@
   - name: 'create qrcode for user html'
     shell: "qrencode -o - 'otpauth://totp/user@machine?{{ 2fa_code }}' | base64"
     register: 2fa_qr
-# moved from local_ssh_ca, the ssh CA should be stored securely, the content here is for signing host certificates (and generates the ssh ca)
+# the ssh CA should be stored securely, the content here is for signing host certificates (and generates the ssh ca)
 #https://blog.habets.se/2011/07/OpenSSH-certificates.html
 - block:
   - name: 'generate the host ssh ca'
@@ -78,3 +78,69 @@
 - name: 'Sign host key, generate certificate Identity, signing key create Host cert, priNciple group and domain, Validity 52weeks, previous key file to sign'
   command: "ssh-keygen -s ed25519-host-ca -I autoscaled_host_id -h -n {{ group }}.{{ domain }} -V +52w ed25519-host-{{ group }}.{{ domain }}"
 
+
+# moved from local_ssh_ca, the ssh CA should be stored securely, the content here is for signing host certificates (and generates the ssh ca)
+#https://blog.habets.se/2011/07/OpenSSH-certificates.html
+- block:
+  - name: 'generate the host ssh ca'
+    command: ssh-keygen -t ed25519 -C SSH_CA-ed25519 -f ed25519-host-ca
+  - name: 'read host SSH CA public key'
+    command: cat ed25519-host-ssh-ca.pub
+  - name: 'read host SSH CA private key'
+    command: cat ed25519-host-ssh-ca
+    register: ssh_host_ca_private
+  when: ssh_host_ca_private
+
+- name: "generate host key (to be signed later), No password, for group: {{ group }} at domain: {{ domain }}"
+  command: "ssh-keygen -N '' -t ed25519 -f ed25519-host-{{ group }}.{{ domain }}"
+- name: 'Sign host key, generate certificate Identity, signing key create Host cert, priNciple group and domain, Validity 52weeks, previous key file to sign'
+  command: "ssh-keygen -s ed25519-host-ca -I autoscaled_host_id -h -n {{ group }}.{{ domain }} -V +52w ed25519-host-{{ group }}.{{ domain }}"
+# TODO, this will help allow adding local users on a central server, this might only be needed when operators don't have Individual Linux machines to work on
+- name: skel create ssh config for our domain customizations, for new accounts
+  copy:
+    owner: root
+    group: root
+    mode: 0600
+    dest: "/etc/skel/.ssh/config.d/{{ domain }}"
+    content: |
+      ControlMaster auto
+      ControlPath ~/.ssh/sockets/C_%h 
+      ControlPersist 6h
+      Compression yes
+      ForwardAgent yes
+      RemoteForward .gnupg/S.gpg-agent.extra .gnupg/S.gpg-agent.forward
+      Include ~/.ssh/config.d/*conf
+- name: skel create ssh config, for new accounts
+  copy:
+    owner: root
+    group: root
+    mode: 0600
+    dest: /etc/skel/.ssh/config
+    content: |
+      Host *.{{ domain }}
+      HostKeyAlgorithms ssh-dss-cert-v01@openssh.com,ssh-dss
+      Host bastion-jump
+      Port 22223
+      DynamicForward localhost:9119
+      LocalForward 9117 localhost:9117
+      ProxyCommand ssh {{ bastion-jump-host }} -W %h:%p -q
+- name: skel create .vimrc, for new accounts
+  copy:
+    owner: root
+    group: root
+    mode: 0644
+    dest: /etc/skel/.ssh/known_hosts
+    content: |
+      @cert-authority {{ ssh_host_ca_pub }}
+
+- name: 'home files'
+  copy:
+    owner: "{{ item.0 }}"
+    content: "{{ item.1.files }}"
+  loop: "{{ files | subelements('files') }}"
+- name: 'create 2fa file'
+  template:
+    path: /etc/users-hotp
+    owner: 'root'
+    group: 'root'
+  loop: "{{ users }}"

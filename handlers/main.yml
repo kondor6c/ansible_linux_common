@@ -1,2 +1,22 @@
 ---
-# handlers file for app-deploy
+- name: handle_sshd
+  systemd:
+    name: sshd
+    enabled: yes
+    state: restarted
+
+- name: handle_chrony
+  systemd:
+    name: chronyd
+    enabled: yes
+    state: restarted
+
+- name: handle_rsyslog
+  systemd:
+    name: rsyslog
+    enabled: yes
+    state: restarted
+
+- name: handle_grub
+  command:
+    cmd: "grub2-mkconfig -o /boot/{{ efi.stat.exists | ternary('efi/EFI/' + (ansible_distribution | lower) , 'grub2' ) }}/grub.cfg "
