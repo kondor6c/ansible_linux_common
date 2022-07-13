@@ -1,5 +1,4 @@
 ---
-
 ##### END OS Packaging and Repositories #####
 - name: upgrade all packages, asynchronously
   package:
